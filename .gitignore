@@ -1,0 +1,33 @@
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# --- Ambienti virtuali -----------------------------------------------------
+.venv/
+venv/
+
+# --- Strumenti di sviluppo -------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Dati generati / locali ------------------------------------------------
+# PDF sorgente, immagini renderizzate e descrizioni: dipendono dall'utente
+# e possono essere rigenerati, quindi non vanno versionati.
+data/
+# Database vettoriale persistente (ricostruibile dalle descrizioni).
+rag/store/
+
+# --- Segreti ---------------------------------------------------------------
+.env
+
+# --- Sistema operativo / IDE -----------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

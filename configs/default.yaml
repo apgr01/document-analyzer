@@ -1,0 +1,38 @@
+# Configurazione di docanalyzer.
+# Ogni valore ha un default: qui basta indicare quelli che si vogliono cambiare.
+# Una chiave scritta male viene segnalata all'avvio.
+
+# Cartella con i dati dell'utente (biblioteca, progetti, CSV prodotti, indice RAG).
+# Relativa alla cartella del progetto, oppure un percorso assoluto.
+workspace_dir: data
+
+gemini:
+  model: gemini-3.6-flash          # lettura delle pagine ed estrazione strutturata
+  text_model: gemini-3.6-flash     # risposte testuali (modalità RAG)
+  temperature: 0.1                 # bassa = risposte più fedeli e ripetibili
+  media_resolution:                # low | medium | high (vuoto = default del modello)
+  thinking_level:                  # minimal | low | medium | high: meno = più veloce ed economico
+                                   # (vuoto = default del modello; se il modello non lo supporta, lascialo vuoto)
+  requests_per_minute_per_key: 10  # ritmo massimo per ciascuna chiave API
+  max_requests_per_minute_total:   # ritmo massimo complessivo; vuoto = si adatta da solo alle quote
+                                   # (le quote valgono per PROGETTO Google: chiavi dello stesso
+                                   #  progetto le condividono)
+  max_retries: 6                   # tentativi per errori di rete/server (non per sovraccarico o quote)
+  retry_delay_seconds: 5           # attesa fissa prima di riprovare (es. 503 "high demand")
+  max_wait_minutes: 10             # oltre questa attesa continua il lavoro si ferma (si riprende rilanciando)
+  quota_cooldown_seconds: 60       # attesa dopo una quota superata, se Google non la indica
+
+render:
+  dpi: 200                         # più alto = testo piccolo più leggibile, file più grandi
+
+indexing:
+  input: image+text                # image+text | image | pdf (cosa riceve Gemini per ogni pagina)
+  max_workers:                     # vuoto = una richiesta parallela per chiave API
+  max_page_attempts: 3             # una pagina fallita viene ritentata fino a N volte
+
+ui:
+  theme: auto                      # auto (chiaro/scuro come il sistema), light, dark o un tema in web/static/css/themes/
+
+rag:
+  collection_name: documents
+  top_k: 4                         # pagine recuperate per rispondere a una domanda

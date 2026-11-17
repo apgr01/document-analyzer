@@ -1,0 +1,18 @@
+/* Tema scuro: ridefinisce solo i colori che cambiano rispetto al tema chiaro (light.css).
+ * Con ui.theme: auto si applica da solo quando il sistema è in modalità scura. */
+:root {
+  color-scheme: dark;
+
+  --color-bg: #14171d;
+  --color-surface: #1d222b;
+  --color-text: #e6e9ef;
+  --color-text-muted: #98a2b3;
+  --color-border: #343b48;
+
+  --color-accent: #7aa2ff;
+  --color-accent-soft: #23304d;
+
+  --color-warning-soft: #3a2e14;
+  --color-danger-soft: #3d1f1d;
+  --color-highlight: #5c4d00;
+}

@@ -1,0 +1,81 @@
+/* Tema chiaro: è il tema di base, sempre caricato, e definisce TUTTE le variabili dei colori.
+ * Gli altri temi (dark.css o uno nuovo) ridefiniscono solo quelle che cambiano.
+ *
+ * Per creare un tema: copia dark.css in un nuovo file di questa cartella (es. ocean.css),
+ * cambia i valori e scegli il tema in configs/default.yaml (ui.theme: ocean).
+ * La pagina #/stile dell'interfaccia mostra tutte le variabili e i componenti.
+ */
+:root {
+  color-scheme: light;
+
+  /* superfici e testo */
+  --color-bg: #f5f6f8;                 /* sfondo della pagina, aree incassate */
+  --color-surface: #ffffff;            /* pannelli, campi, dialoghi */
+  --color-text: #1d2330;
+  --color-text-muted: #667085;
+  --color-border: #d9dde5;
+  --color-paper: #ffffff;              /* dietro le immagini delle pagine PDF */
+  --color-backdrop: rgba(0, 0, 0, .45);
+
+  /* accento (azioni, collegamenti, selezione) */
+  --color-accent: #2c5fd6;
+  --color-accent-soft: #e8eefc;
+  --color-on-accent: #ffffff;          /* testo sopra l'accento */
+
+  /* stati */
+  --color-success: #1e8e4e;
+  --color-success-soft: #d9f2e3;
+  --color-success-strong: #155c33;
+  --color-success-border: #a9dcbd;
+  --color-warning: #b26b00;
+  --color-warning-soft: #fff5e0;
+  --color-danger: #c4312b;
+  --color-danger-soft: #fdecea;
+  --color-highlight: #fff1a8;          /* testo trovato nella pagina di ricerca */
+
+  /* proposte di Gemini */
+  --color-gemini: #9b72cb;
+
+  /* collezioni di pagine della biblioteca */
+  --color-tag-dati: #1e8e4e;
+  --color-tag-esempio: #2c5fd6;
+  --color-tag-copertina: #8a6d3b;
+  --color-tag-indice: #7b68d9;
+  --color-tag-introduzione: #3a8fb7;
+  --color-tag-legenda: #b96db5;
+  --color-tag-tabelle-tecniche: #d08a00;
+  --color-tag-disegni: #c4312b;
+  --color-tag-avvertenze: #a35d00;
+  --color-tag-vuota: #8b93a1;
+  --color-tag-altro: #4a5568;
+  --color-tag-default: #666666;
+
+  /* gioco durante l'attesa (sempre scuro, in tutti i temi) */
+  --game-bg: #0b1020;
+  --game-bg-top: #0d1226;
+  --game-bg-bottom: #1b1036;
+  --game-track: #1a2140;
+  --game-text: #e8ecff;
+  --game-text-muted: #b9c2e8;
+  --game-text-faint: #8790b8;
+  --game-light: #ffffff;
+  --game-grid: rgba(255, 255, 255, .05);
+  --game-overlay: rgba(8, 10, 25, .55);
+  --game-shadow: rgba(0, 0, 0, .25);
+  --game-glow: rgba(160, 190, 255, .9);
+  --game-snake-1: #4285f4;
+  --game-snake-2: #5b73e8;
+  --game-snake-3: #7b68d9;
+  --game-snake-4: #9b72cb;
+  --game-snake-5: #b96db5;
+  --game-snake-6: #d96570;
+  --game-done-1: #8ab4ff;
+  --game-done-2: #d7b4ff;
+  --game-done-3: #ffb4bc;
+  --game-spark: #ffd166;
+  --game-hit: #ff6b6b;
+  --game-paper-fold: #c9cdd6;
+  --game-pdf: #e5322d;
+  --game-crumb: #7a4a26;
+  --game-crumb-light: #a8683a;
+}

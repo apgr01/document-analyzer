@@ -1,0 +1,63 @@
+/* Variabili di base dell'interfaccia: scale e misure dei componenti. Niente colori: quelli stanno
+ * nei temi (css/themes/), che possono ridefinire anche queste variabili se serve.
+ *
+ * Livelli:
+ *   1. scale       — spazi, testo, raggi, durate: i "mattoni" di tutto il resto;
+ *   2. colori      — ruoli (superficie, testo, accento, successo, ...), definiti dai temi;
+ *   3. componenti  — misure di pulsanti, campi, pannelli, costruite sulle scale.
+ * I componenti (css/app.css) usano solo queste variabili: per cambiare aspetto basta un tema.
+ */
+:root {
+  /* --- tipografia ------------------------------------------------------------------------ */
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --text-2xs: .72rem;
+  --text-xs: .75rem;
+  --text-sm: .85rem;
+  --text-base: 15px;
+  --text-md: .95rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.5rem;
+  --leading: 1.5;
+  --weight-strong: 600;
+  --weight-heavy: 700;
+
+  /* --- spazi ----------------------------------------------------------------------------- */
+  --space-3xs: .15rem;
+  --space-2xs: .25rem;
+  --space-xs: .35rem;
+  --space-s: .5rem;
+  --space-m: .75rem;
+  --space-l: 1rem;
+  --space-xl: 1.25rem;
+  --space-2xl: 1.5rem;
+  --gutter: 16px;                 /* margine della pagina e dei pannelli */
+
+  /* --- forme ----------------------------------------------------------------------------- */
+  --border-width: 1px;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  /* --- impaginazione e movimento --------------------------------------------------------- */
+  --page-width: 1280px;
+  --dialog-width: 560px;
+  --dialog-wide-width: 1000px;
+  --duration-fast: .3s;
+  --duration: .4s;
+
+  /* --- componenti ------------------------------------------------------------------------ */
+  --control-padding: .45rem .6rem;          /* campi di testo, menu */
+  --control-radius: var(--radius-md);
+  --button-padding: .45rem .9rem;
+  --button-padding-sm: .2rem .55rem;
+  --panel-padding: var(--gutter);
+  --panel-radius: var(--radius-lg);
+  --badge-padding: 0 .45rem;
+  --table-cell-padding: var(--space-xs) var(--space-s);
+  --table-max-height: 28rem;
+  --input-number-width: 5rem;
+  --input-page-width: 4rem;
+}
