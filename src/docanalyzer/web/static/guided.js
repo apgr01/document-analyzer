@@ -29,8 +29,7 @@ async function renderGuidedPanel(c) {
   const runs = await api("GET", `/api/library/catalogs/${enc(c.id)}/guided`);
   if (!$("#guided-panel")) return;
   box.innerHTML = `
-    <div class="row"><h3 class="m-0">Crea progetto</h3><span class="spacer"></span>
-      <a class="linkbtn" href="#/guidato/nuovo/${enc(c.id)}">Crea progetto da questo catalogo…</a></div>
+    <h3>Crea progetto</h3>
     ${helpBlock("card-project", "Scrivi la tabella che vuoi ottenere; Gemini può cercare i cataloghi simili.",
       `<p>Cosa rappresenta una riga e le colonne; poi, se vuoi, Gemini cerca tra i cataloghi analizzati della biblioteca
         quelli che possono produrre righe della stessa tabella.</p>`)}

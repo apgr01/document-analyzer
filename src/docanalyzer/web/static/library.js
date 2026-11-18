@@ -9,6 +9,9 @@
  */
 "use strict";
 
+// sezione aperta della scheda di ogni catalogo (resta finché la pagina è aperta)
+const catalogTabs = {};
+
 // filtri della biblioteca: restano finché la pagina è aperta
 const libFilters = { search: "", tags: [] };
 
@@ -334,6 +337,12 @@ async function renderCatalog(id) {
     <div id="job"></div>
     <div id="proposal"></div>
 
+    <nav class="tabs" id="cat-tabs">
+      <a href="#" data-ctab="overview">Scheda</a>
+      <a href="#" data-ctab="pages">Pagine e collezioni</a>
+      <a href="#" data-ctab="analysis">Analisi e guida${c.guide ? "" : ' <span class="badge warn">da fare</span>'}</a>
+    </nav>
+    <section data-ctab-panel="overview">
     <div class="grid2">
       <div class="panel">
         <h3>Scheda</h3>
@@ -363,6 +372,47 @@ async function renderCatalog(id) {
       <button class="secondary" id="cat-delete" type="button">Elimina dalla biblioteca</button>
       <button id="cat-save" type="button">Salva scheda</button></div>
 
+    <div class="panel" id="guided-panel"></div>
+    <div class="panel" id="projects-panel"></div>
+    </section>
+    <section data-ctab-panel="pages">
+    <div class="panel">
+      <h3>Pagine e collezioni</h3>
+      ${helpBlock("card-collections", "Seleziona le pagine, scegli il tag e aggiungi la collezione.",
+        `<p>Clic su una miniatura per vederla in grande, <strong>Maiusc+clic</strong> per selezionare un intervallo. Una
+          pagina può stare in più collezioni.</p>`)}
+      <div class="viewer">
+        <div class="thumbs viewer-thumbs" id="v-thumbs">${Array.from({ length: total }, (_, i) => i + 1).map(p => `
+          <div class="thumb" data-p="${p}"><img loading="lazy" src="/api/documents/${enc(c.id)}/thumb/${p}" alt="">
+            <div>${p}</div><div class="marks" data-marks="${p}"></div></div>`).join("")}</div>
+        <div class="viewer-main">
+          <div class="row">
+            <button class="secondary small" id="v-prev" type="button">&larr;</button>
+            <span>Pagina <input type="text" id="v-page" class="input-page centered"> di ${total}</span>
+            <button class="secondary small" id="v-next" type="button">&rarr;</button>
+            <span class="small muted" id="v-in"></span><span class="spacer"></span>
+            <a class="linkbtn secondary small" id="v-open" href="/api/documents/${enc(c.id)}/pdf" target="_blank"
+               rel="noopener" title="Apre il PDF originale in una nuova scheda del browser, a questa pagina">Apri il PDF ↗</a>
+          </div>
+          <img id="v-img" class="viewer-img" alt="">
+        </div>
+      </div>
+      <div class="collect">
+        <div class="row">
+          <strong id="c-mode">Nuova collezione:</strong>
+          <span>pagine <input type="text" id="c-start" class="input-page"> – <input type="text" id="c-end" class="input-page"></span>
+          <select id="c-tag" class="input-auto">${data.page_tags.map(t =>
+            `<option value="${esc(t.id)}" title="${esc(t.help)}">${esc(t.label)}</option>`).join("")}</select>
+          <input type="text" id="c-comment" placeholder="commento (facoltativo)" class="grow">
+          <button id="c-save" type="button">Aggiungi collezione</button>
+          <button class="secondary" id="c-cancel" type="button" hidden>Annulla</button>
+        </div>
+        <p class="hint" id="c-help"></p>
+      </div>
+      <div id="collections"></div>
+    </div>
+    </section>
+    <section data-ctab-panel="analysis">
     <div class="panel" id="guide-panel">
       <h3>Guida all'indicizzazione</h3>
       ${helpBlock("card-guide", "Come leggere una pagina isolata di questo catalogo: accompagna ogni pagina inviata a Gemini.",
@@ -422,45 +472,16 @@ async function renderCatalog(id) {
         <button class="secondary" id="a-preview" type="button">Vedi il prompt</button>
         <button class="gemini" id="a-send" type="button">Analizza con Gemini</button></div>
     </div>
+    </section>`;
 
-    <div class="panel">
-      <h3>Pagine e collezioni</h3>
-      ${helpBlock("card-collections", "Seleziona le pagine, scegli il tag e aggiungi la collezione.",
-        `<p>Clic su una miniatura per vederla in grande, <strong>Maiusc+clic</strong> per selezionare un intervallo. Una
-          pagina può stare in più collezioni.</p>`)}
-      <div class="viewer">
-        <div class="thumbs viewer-thumbs" id="v-thumbs">${Array.from({ length: total }, (_, i) => i + 1).map(p => `
-          <div class="thumb" data-p="${p}"><img loading="lazy" src="/api/documents/${enc(c.id)}/thumb/${p}" alt="">
-            <div>${p}</div><div class="marks" data-marks="${p}"></div></div>`).join("")}</div>
-        <div class="viewer-main">
-          <div class="row">
-            <button class="secondary small" id="v-prev" type="button">&larr;</button>
-            <span>Pagina <input type="text" id="v-page" class="input-page centered"> di ${total}</span>
-            <button class="secondary small" id="v-next" type="button">&rarr;</button>
-            <span class="small muted" id="v-in"></span><span class="spacer"></span>
-            <a class="linkbtn secondary small" id="v-open" href="/api/documents/${enc(c.id)}/pdf" target="_blank"
-               rel="noopener" title="Apre il PDF originale in una nuova scheda del browser, a questa pagina">Apri il PDF ↗</a>
-          </div>
-          <img id="v-img" class="viewer-img" alt="">
-        </div>
-      </div>
-      <div class="collect">
-        <div class="row">
-          <strong id="c-mode">Nuova collezione:</strong>
-          <span>pagine <input type="text" id="c-start" class="input-page"> – <input type="text" id="c-end" class="input-page"></span>
-          <select id="c-tag" class="input-auto">${data.page_tags.map(t =>
-            `<option value="${esc(t.id)}" title="${esc(t.help)}">${esc(t.label)}</option>`).join("")}</select>
-          <input type="text" id="c-comment" placeholder="commento (facoltativo)" class="grow">
-          <button id="c-save" type="button">Aggiungi collezione</button>
-          <button class="secondary" id="c-cancel" type="button" hidden>Annulla</button>
-        </div>
-        <p class="hint" id="c-help"></p>
-      </div>
-      <div id="collections"></div>
-    </div>
-
-    <div class="panel" id="guided-panel"></div>
-    <div class="panel" id="projects-panel"></div>`;
+  // --- sezioni della scheda
+  const showTab = name => {
+    catalogTabs[c.id] = name;
+    $$("[data-ctab-panel]").forEach(el => { el.hidden = el.dataset.ctabPanel !== name; });
+    $$("#cat-tabs [data-ctab]").forEach(a => a.classList.toggle("active", a.dataset.ctab === name));
+  };
+  $$("#cat-tabs [data-ctab]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); showTab(a.dataset.ctab); }));
+  showTab(catalogTabs[c.id] || (c.analyzed ? "overview" : "analysis"));
 
   // --- scheda
   $("#cat-title").value = c.title;
@@ -841,6 +862,7 @@ async function renderCatalog(id) {
     $("#p-close").addEventListener("click", () => { box.innerHTML = ""; });
     $$("[data-pgo]", box).forEach(b => b.addEventListener("click", () => {
       const x = r.collections[+b.dataset.pgo]; select(x.start, x.end); show(x.start);
+      showTab("pages");
       thumbs.scrollIntoView({ block: "center", behavior: "smooth" });
     }));
     if ($("#p-dismiss")) $("#p-dismiss").addEventListener("click", e => busy(e.target, async () => {
@@ -876,7 +898,7 @@ async function renderCatalog(id) {
 
   renderCatalogProjects(c).catch(showError);
   if ($("#goto-projects")) $("#goto-projects").addEventListener("click", e => {
-    e.preventDefault(); $("#projects-panel").scrollIntoView({ block: "start", behavior: "smooth" });
+    e.preventDefault(); showTab("overview"); $("#projects-panel").scrollIntoView({ block: "start", behavior: "smooth" });
   });
   renderGuidedPanel(c).catch(showError);
 
