@@ -26,6 +26,7 @@ import difflib
 import hashlib
 import json
 import tempfile
+import threading
 import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Callable
@@ -111,6 +112,17 @@ def unusual_char(ch: str) -> bool:
 
 
 # ---------------------------------------------------------------------------------- archivio
+# Esiti e segnalazioni accettate sono file letti, modificati e riscritti: due richieste insieme sullo
+# stesso progetto (una verifica e una correzione, due schede del browser) non devono perdersi a vicenda.
+_locks: dict[str, threading.Lock] = {}
+_locks_guard = threading.Lock()
+
+
+def _store_lock(project: Project) -> threading.Lock:
+    with _locks_guard:
+        return _locks.setdefault(str(verifiche_dir(project)), threading.Lock())
+
+
 def _path(project: Project, name: str) -> Path:
     return verifiche_dir(project) / name
 
@@ -130,9 +142,10 @@ def load_accepted(project: Project) -> set[str]:
 
 
 def set_accepted(project: Project, ids: list[str], accepted: bool = True) -> set[str]:
-    current = load_accepted(project)
-    current = current | set(ids) if accepted else current - set(ids)
-    write_json(_path(project, "accettate.json"), {"ids": sorted(current)})
+    with _store_lock(project):
+        current = load_accepted(project)
+        current = current | set(ids) if accepted else current - set(ids)
+        write_json(_path(project, "accettate.json"), {"ids": sorted(current)})
     return current
 
 
@@ -544,14 +557,16 @@ def run_check(app: App, project: Project, check: str, doc_ids: list[str] | None 
         fn = {"copertura": check_coverage, "testo": check_text, "riferimento": check_reference,
               "vuoti": check_empty}[check]
         outcome = {data.doc.id: fn(project, data) for data in datas}
-    stored = load_results(project)
-    entry = stored.setdefault(check, {})
     by_id = {d.doc.id: d for d in datas}
-    for doc_id, (items, summary) in outcome.items():
-        data = by_id[doc_id]
-        entry[doc_id] = {"run_at": utc_now(), "signature": signature(project, data.doc, data.spec, check, corrections),
-                         "summary": summary, "items": items}
-    save_results(project, stored)
+    with _store_lock(project):
+        stored = load_results(project)
+        entry = stored.setdefault(check, {})
+        for doc_id, (items, summary) in outcome.items():
+            data = by_id[doc_id]
+            entry[doc_id] = {"run_at": utc_now(),
+                             "signature": signature(project, data.doc, data.spec, check, corrections),
+                             "summary": summary, "items": items}
+        save_results(project, stored)
     return {doc_id: summary for doc_id, (_, summary) in outcome.items()}
 
 

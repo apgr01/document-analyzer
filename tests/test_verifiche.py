@@ -217,6 +217,23 @@ def test_run_all_free_checks(indexed):
     assert set(r["skipped"]) == {"testo", "vuoti", "doppioni"} and "Chiave" in r["skipped"]["doppioni"]
 
 
+def test_parallel_checks_keep_every_result(indexed):
+    """Verifiche lanciate insieme (più schede, una correzione durante una verifica) non si cancellano a vicenda."""
+    import threading
+
+    client, _, _, base, doc_id = indexed
+    checks = ["copertura", "testo", "caratteri", "vuoti", "doppioni"]
+    for _ in range(3):
+        threads = [threading.Thread(target=client.post, args=(f"{base}/verifiche/{c}",), kwargs={"json": {}})
+                   for c in checks]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        cells = client.get(f"{base}/verifiche").json()["documents"][0]["checks"]
+        assert all(cells[c]["state"] != "non eseguita" for c in checks), cells
+
+
 def test_corrections(indexed):
     client, fake, app, base, doc_id = indexed
     rows = client.get(f"{base}/righe").json()

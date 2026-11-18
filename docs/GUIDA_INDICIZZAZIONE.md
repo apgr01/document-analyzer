@@ -371,9 +371,11 @@ eseguire*, *nessun problema*, *N da vedere*, *da rieseguire* se dopo la verifica
 risultati, correzioni o impostazioni di quel PDF). La prova del passo ③ non si verifica: serve
 solo a vedere com'è la tabella.
 
-**Esegui le verifiche senza Gemini** le fa tutte subito (anche il confronto con un elenco di
-riferimento già letto); *Esegui* su una riga ne fa una sola. Clic su una riga per vederne le
-segnalazioni.
+**Esegui le verifiche senza Gemini** le fa tutte (anche il confronto con un elenco di
+riferimento già letto); *Esegui* su una riga ne fa una sola. Le verifiche girano una alla volta:
+quelle lanciate mentre un'altra è in corso vanno in coda e partono da sole, e la barra sopra la
+tabella mostra una tappa per verifica (anche cambiando scheda la coda continua). Le verifiche già
+eseguite hanno la freccia **▸**: clic sulla riga per aprirne le segnalazioni subito sotto.
 
 | Verifica | Cosa controlla | Gemini |
 |---|---|---|

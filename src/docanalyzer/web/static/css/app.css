@@ -66,6 +66,15 @@ button.secondary { background: transparent; color: var(--color-accent); }
 button.danger { background: var(--color-danger); border-color: var(--color-danger); }
 button.gemini::before { content: "\2728 "; }           /* stellina: questa azione usa Gemini */
 button:disabled { opacity: .5; cursor: not-allowed; }
+/* al lavoro: rotellina accanto al testo (busy() in app.js e la coda delle verifiche) */
+button.is-busy:disabled { opacity: .8; cursor: progress; }
+.spinner, button.is-busy::after {
+  content: ""; display: inline-block; width: .9em; height: .9em; vertical-align: -.1em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+button.is-busy::after { margin-left: var(--space-xs); }
+@keyframes spin { to { transform: rotate(360deg); } }
 button.small { padding: var(--button-padding-sm); font-size: var(--text-sm); }
 a.linkbtn { display: inline-block; text-decoration: none; border: var(--border-width) solid var(--color-accent);
             border-radius: var(--control-radius); padding: var(--button-padding); color: var(--color-on-accent);
@@ -281,8 +290,28 @@ dialog img { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; 
 .v-matrix { max-height: none; }
 .v-matrix td { vertical-align: middle; }
 .v-matrix td .badge { white-space: nowrap; }
-.v-matrix tr.current { background: var(--color-accent-soft); }
-.v-matrix tr.current td:first-child { box-shadow: inset 3px 0 0 var(--color-accent); }
+/* righe apribili: freccia ▸ / ▾, le segnalazioni nella riga sotto */
+.v-toggle { width: 1.5rem; color: var(--color-text); font-size: var(--text-lg); line-height: 1; }
+.v-check.clickable .v-toggle::before { content: "\25B8"; display: inline-block; transition: transform var(--duration-fast); }
+.v-check.open .v-toggle::before { transform: rotate(90deg); color: var(--color-accent); }
+.v-matrix tr.open { background: var(--color-accent-soft); }
+.v-matrix tr.open > td:first-child { box-shadow: inset 3px 0 0 var(--color-accent); }
+.v-detail-row > td { padding: 0 0 var(--space-m) var(--space-l); }
+.v-detail-row .panel { margin: 0; }
+
+/* coda delle verifiche: una tappa per verifica */
+.v-queue { margin: var(--space-s) 0; padding: var(--space-s) var(--space-m); background: var(--color-bg);
+  border: var(--border-width) solid var(--color-border); border-radius: var(--radius-md); }
+.v-stages { display: flex; gap: var(--space-2xs); list-style: none; margin: var(--space-s) 0 0; padding: 0; }
+.v-stages li { flex: 1 1 0; min-width: 0; padding-top: var(--space-2xs); border-top: 6px solid var(--color-border);
+  font-size: var(--text-sm); color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v-stages li.done { border-top-color: var(--color-success); color: var(--color-text); }
+.v-stages li.running { border-top-color: var(--color-accent); color: var(--color-text); font-weight: 600;
+  animation: stage-pulse 1.2s ease-in-out infinite; }
+.v-stages li.skipped { border-top-color: var(--color-warning); }
+.v-stages li.failed { border-top-color: var(--color-danger); color: var(--color-danger); }
+@keyframes stage-pulse { 50% { border-top-color: var(--color-accent-soft); } }
+.v-queue-notes { margin: var(--space-s) 0 0; padding-left: var(--space-xl); }
 .v-items td { vertical-align: middle; }
 .v-items tr.accepted { opacity: .6; }
 .v-actions { white-space: nowrap; }

@@ -189,15 +189,16 @@ async function renderVerify(ctx) {
     const first = ov.checks.find(c => selDocs.some(d => d.checks[c.id].state === "problemi"));
     ui.check = first ? first.id : null;
   }
-  const docsParam = sel.join(",");
-  const [detail, corrections] = await Promise.all([
-    ui.check ? api("GET", `/api/projects/${enc(pid)}/verifiche/${ui.check}?docs=${enc(docsParam)}`) : null,
-    api("GET", `/api/projects/${enc(pid)}/correzioni`),
-  ]);
-  // verifiche già eseguite sui PDF scelti: dopo una correzione si rifanno da sole (il confronto con l'elenco
-  // di riferimento già letto non usa Gemini)
+  // verifiche già eseguite sui PDF scelti: si possono aprire e, dopo una correzione, si rifanno da sole
+  // (il confronto con l'elenco di riferimento già letto non usa Gemini)
   const ran = ov.checks.filter(c => selDocs.some(d => !["non eseguita", "non indicizzato"].includes(d.checks[c.id].state)));
   const env = { ctx, ui, ov, sel, selDocs, titles, ran: ran.map(c => c.id) };
+  const openCheck = env.ran.includes(ui.check) ? ui.check : null;
+  const [detail, corrections] = await Promise.all([
+    openCheck ? api("GET", `/api/projects/${enc(pid)}/verifiche/${openCheck}?docs=${enc(sel.join(","))}`) : null,
+    api("GET", `/api/projects/${enc(pid)}/correzioni`),
+  ]);
+  vQueue(pid).ctx = ctx;
 
   box.innerHTML = `
     <div class="panel">
@@ -210,32 +211,29 @@ async function renderVerify(ctx) {
         `<p>Le correzioni (sostituzioni, celle modificate, righe eliminate) si applicano al CSV ogni volta che si genera,
           senza toccare ciò che ha letto Gemini, e si possono togliere.</p>
         <p>Clic su un PDF per lavorare solo su quello; Ctrl (⌘ sul Mac) + clic per sceglierne più d'uno. Verifiche, righe e
-          azioni valgono per i PDF scelti. Clic su una verifica per vederne le segnalazioni.</p>`)}
+          azioni valgono per i PDF scelti. Clic su una verifica già eseguita (freccia ▸) per vederne le segnalazioni.</p>
+        <p>Le verifiche girano una alla volta: quelle che lanci mentre un'altra è in corso aspettano in coda e
+          partono da sole; la barra mostra una tappa per verifica.</p>`)}
       <div class="chips v-docs">
         <button type="button" class="chip ${ui.docs ? "" : "on"}" data-vdocs="all">Tutti i PDF <span class="small">${indexed.length}</span></button>
         ${ov.documents.map(d => `<button type="button" class="chip ${ui.docs && ui.docs.includes(d.id) ? "on" : ""}" data-vdoc="${esc(d.id)}"
           ${d.indexed ? "" : 'disabled title="Non ancora indicizzato"'}>${esc(d.title)}</button>`).join("")}
       </div>
-      <div class="table-wrap v-matrix"><table><thead><tr><th>Verifica</th>
+      <div id="v-queue" class="v-queue" data-pid="${esc(pid)}" hidden></div>
+      <div class="table-wrap v-matrix"><table><thead><tr><th></th><th>Verifica</th>
           ${selDocs.map(d => `<th>${selDocs.length > 1 ? esc(d.title) : "Esito"}</th>`).join("")}<th></th></tr></thead><tbody>
-        ${ov.checks.map(c => `<tr class="clickable ${c.id === ui.check ? "current" : ""}" data-vcheck="${c.id}">
-          <td><strong>${esc(c.label)}</strong>${c.paid ? ' <span class="badge" title="Usa Gemini: una richiesta per PDF, la prima volta">✨ Gemini</span>' : ""}
-            <br><span class="small muted" title="${esc(VERIFY_HELP[c.id])}">${esc(VERIFY_SHORT[c.id])}</span></td>
-          ${selDocs.map(d => `<td>${verifyCell(d.checks[c.id])}</td>`).join("")}
-          <td class="nowrap"><button type="button" class="${c.paid ? "secondary gemini" : "secondary"} small" data-vrun="${c.id}">Esegui</button></td>
-        </tr>`).join("")}
+        ${ov.checks.map(c => vCheckRow(c, selDocs, env.ran.includes(c.id), c.id === openCheck)).join("")}
       </tbody></table></div>
     </div>
-    <div id="v-detail"></div>
     <details class="panel" id="v-settings" ${ui.settingsOpen ? "open" : ""}></details>
     <div class="panel" id="v-rows"><p class="muted small">Caricamento delle righe…</p></div>
     <details class="panel" id="v-corr" ${ui.corrOpen || corrections.rules.length + corrections.edits.length + corrections.deletions.length ? "open" : ""}></details>`;
 
-  $("#v-run-all", box).addEventListener("click", e => busy(e.target, () => vRun(env, "tutte")));
+  $("#v-run-all", box).addEventListener("click", () => vEnqueue(env, "tutte"));
   $$("[data-vrun]", box).forEach(b => b.addEventListener("click", e => {
     e.stopPropagation();
-    ui.check = b.dataset.vrun;
-    busy(b, () => vRun(env, b.dataset.vrun));
+    ui.check = b.dataset.vrun;          // finita, si apre sul risultato
+    vEnqueue(env, b.dataset.vrun);
   }));
   $$("[data-vcheck]", box).forEach(tr => tr.addEventListener("click", () => {
     ui.check = ui.check === tr.dataset.vcheck ? "" : tr.dataset.vcheck;
@@ -252,6 +250,7 @@ async function renderVerify(ctx) {
     vResetRows(ui);
     ctx.rerender();
   }));
+  vRenderQueue(pid);
   vRenderDetail(env, detail);
   vRenderSettings(env);
   vRenderCorrections(env, corrections);
@@ -261,37 +260,151 @@ async function renderVerify(ctx) {
 
 function vResetRows(ui) { ui.rows = { q: "", page: "", doc: null, offset: 0 }; }
 
-/** Esegue una verifica (o "tutte" quelle senza Gemini) sui PDF scelti. */
-async function vRun(env, check, extra = {}) {
-  const { ctx, ui, sel, selDocs } = env;
-  if (check === "riferimento") {
-    const toRead = selDocs.filter(d => extra.reread || !d.reference);
-    if (toRead.length) {
-      const missing = toRead.filter(d => !d.reference_pages);
-      if (missing.length) {
-        ui.settingsOpen = true;
-        toast(`Scegli le pagine dell'elenco di riferimento per: ${missing.map(d => d.title).join(", ")} (impostazioni qui sotto).`, 7000);
-        ctx.rerender();
-        return;
+/** Una riga della tabella delle verifiche; se è aperta, sotto c'è la riga con le segnalazioni. */
+function vCheckRow(c, selDocs, hasResult, open) {
+  const attrs = hasResult ? `class="v-check clickable${open ? " open" : ""}" data-vcheck="${c.id}" aria-expanded="${open}"
+    title="${open ? "Chiudi" : "Mostra le segnalazioni"}"` : 'class="v-check"';
+  return `<tr ${attrs}>
+      <td class="v-toggle"></td>
+      <td><strong>${esc(c.label)}</strong>${c.paid ? ' <span class="badge" title="Usa Gemini: una richiesta per PDF, la prima volta">✨ Gemini</span>' : ""}
+        <br><span class="small muted" title="${esc(VERIFY_HELP[c.id])}">${esc(VERIFY_SHORT[c.id])}</span></td>
+      ${selDocs.map(d => `<td>${verifyCell(d.checks[c.id])}</td>`).join("")}
+      <td class="nowrap"><button type="button" class="${c.paid ? "secondary gemini" : "secondary"} small" data-vrun="${c.id}">Esegui</button></td>
+    </tr>${open ? `<tr class="v-detail-row"><td colspan="${selDocs.length + 3}"><div id="v-detail"></div></td></tr>` : ""}`;
+}
+
+// ------------------------------------------------------------------ coda delle verifiche
+// Le verifiche partono una alla volta, nell'ordine in cui si chiedono: quelle chieste mentre un'altra è in
+// corso aspettano in coda. La coda è del progetto e continua anche cambiando scheda; la barra ha una tappa
+// per verifica.
+const verifyQueues = {};
+const STAGE_CLASS = { attesa: "waiting", "in corso": "running", fatta: "done", saltata: "skipped", errore: "failed", annullata: "skipped" };
+const ACTIVE = ["attesa", "in corso"];
+
+function vQueue(pid) { return verifyQueues[pid] || (verifyQueues[pid] = { steps: [], running: false, ctx: null }); }
+
+/** Mette in coda una verifica, o "tutte" (una tappa per ognuna senza Gemini), sui PDF scelti. */
+async function vEnqueue(env, check, extra = {}) {
+  const { ctx, ov, sel, selDocs } = env;
+  if (check === "riferimento" && !await vConfirmReference(env, extra)) return;
+  const q = vQueue(ctx.pid);
+  if (!q.running) q.steps = [];                       // la barra riparte da capo
+  const base = `/api/projects/${enc(ctx.pid)}/verifiche`;
+  const docsKey = sel.join(",");
+  let added = 0;
+  const add = (id, url, body) => {
+    if (q.steps.some(s => s.check === id && s.docsKey === docsKey && ACTIVE.includes(s.state))) return;
+    q.steps.push({ check: id, label: ov.checks.find(c => c.id === id).label, url, body, docsKey, state: "attesa", message: "" });
+    added++;
+  };
+  if (check === "tutte") {
+    ov.checks.filter(c => !c.paid).forEach(c => add(c.id, `${base}/tutte`, { docs: sel, checks: [c.id] }));
+    // il confronto con l'elenco già letto non usa Gemini
+    if (selDocs.some(d => d.reference)) add("riferimento", `${base}/tutte`, { docs: sel, checks: ["riferimento"] });
+  } else add(check, `${base}/${check}`, { docs: sel, ...extra });
+  if (!added) toast("Già in coda.");
+  vRenderQueue(ctx.pid);
+  vDrain(ctx.pid);
+}
+
+/** Prima di leggere l'elenco di riferimento con Gemini: pagine scelte e conferma. */
+async function vConfirmReference({ ctx, ui, selDocs }, extra) {
+  const toRead = selDocs.filter(d => extra.reread || !d.reference);
+  if (!toRead.length) return true;
+  const missing = toRead.filter(d => !d.reference_pages);
+  if (missing.length) {
+    ui.settingsOpen = true;
+    toast(`Scegli le pagine dell'elenco di riferimento per: ${missing.map(d => d.title).join(", ")} (impostazioni qui sotto).`, 7000);
+    ctx.rerender();
+    return false;
+  }
+  return confirmDialog({ title: "Leggere l'elenco di riferimento con Gemini?", ok: "Leggi con Gemini", html: `
+    <p>${plural(toRead.length, "richiesta", "richieste")} a Gemini, una per PDF: trascrive l'elenco (voci e pagine) da</p>
+    <ul>${toRead.map(d => `<li><strong>${esc(d.title)}</strong>: pagine ${esc(d.reference_pages)}</li>`).join("")}</ul>
+    <p class="hint">Poi il confronto con il CSV si rifà senza Gemini. L'elenco letto si può vedere e correggere a mano.</p>` });
+}
+
+/** Esegue le tappe in attesa, una dopo l'altra; dopo ognuna la pagina si aggiorna (se è aperta). */
+async function vDrain(pid) {
+  const q = vQueue(pid);
+  if (q.running) return;
+  q.running = true;
+  let step;
+  while ((step = q.steps.find(s => s.state === "attesa"))) {
+    step.state = "in corso";
+    vRenderQueue(pid);
+    try {
+      const r = await api("POST", step.url, step.body);
+      if (r.job) await vFollowJob(pid, step, r.job);
+      else {
+        const skipped = Object.values(r.skipped || {});
+        step.state = skipped.length ? "saltata" : "fatta";
+        step.message = skipped.join("; ");
       }
-      const ok = await confirmDialog({ title: "Leggere l'elenco di riferimento con Gemini?", ok: "Leggi con Gemini", html: `
-        <p>${plural(toRead.length, "richiesta", "richieste")} a Gemini, una per PDF: trascrive l'elenco (voci e pagine) da</p>
-        <ul>${toRead.map(d => `<li><strong>${esc(d.title)}</strong>: pagine ${esc(d.reference_pages)}</li>`).join("")}</ul>
-        <p class="hint">Poi il confronto con il CSV si rifà senza Gemini. L'elenco letto si può vedere e correggere a mano.</p>` });
-      if (!ok) return;
+    } catch (e) {
+      step.state = "errore";
+      step.message = e.message;
     }
+    if (q.steps.some(s => s.state === "attesa")) vRefresh(pid);
   }
-  const r = await api("POST", `/api/projects/${enc(ctx.pid)}/verifiche/${check}`, { docs: sel, ...extra });
-  if (r.job) {
-    ctx.box.innerHTML = "";
-    watchJob(ctx.jobBox, r.job, () => ctx.rerender());
-    return;
+  q.running = false;
+  vRefresh(pid);
+}
+
+/** Una tappa che legge con Gemini è un lavoro del server: se ne segue l'avanzamento. */
+async function vFollowJob(pid, step, job) {
+  step.job = job.id;
+  while (job.status === "in_corso") {
+    step.message = job.message || "";
+    vRenderQueue(pid);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    job = await api("GET", `/api/jobs/${job.id}`);
   }
-  const skipped = Object.entries(r.skipped || {});
-  if (skipped.length) toast(`Non eseguite: ${skipped.map(([c, why]) => `${c} (${why})`).join("; ")}`, 9000);
-  else if (check === "tutte") toast("Verifiche eseguite.");
-  if (check === "tutte" && !ui.check) ui.check = null;
-  ctx.rerender();
+  step.job = null;
+  step.state = { completato: "fatta", annullato: "annullata" }[job.status] || "errore";
+  step.message = job.status === "errore" ? job.error || "" : "";
+}
+
+function vRefresh(pid) {
+  const q = vQueue(pid);
+  if (q.ctx && document.querySelector(`#v-queue[data-pid="${CSS.escape(pid)}"]`)) q.ctx.rerender();
+}
+
+/** La barra a tappe e i pulsanti "Esegui" delle verifiche in coda. */
+function vRenderQueue(pid) {
+  const el = document.querySelector(`#v-queue[data-pid="${CSS.escape(pid)}"]`);
+  if (!el) return;
+  const q = vQueue(pid);
+  $$("[data-vrun]").forEach(b => {
+    const s = q.steps.find(x => x.check === b.dataset.vrun && ACTIVE.includes(x.state));
+    b.disabled = !!s;
+    b.classList.toggle("is-busy", s?.state === "in corso");
+    b.textContent = !s ? "Esegui" : s.state === "in corso" ? "In corso" : "In coda";
+  });
+  el.hidden = !q.steps.length;
+  if (!q.steps.length) { el.innerHTML = ""; return; }
+  const finished = q.steps.filter(s => !ACTIVE.includes(s.state)).length;
+  const current = q.steps.find(s => s.state === "in corso");
+  const notes = q.steps.filter(s => s.message && !ACTIVE.includes(s.state));
+  el.innerHTML = `
+    <div class="row">
+      ${q.running ? '<span class="spinner"></span>' : ""}
+      <strong>${q.running ? "Verifiche in corso" : "Verifiche finite"}: ${finished} di ${q.steps.length}</strong>
+      ${current ? `<span class="small muted">${esc(current.label)}${current.message ? ` — ${esc(current.message)}` : ""}</span>` : ""}
+      <span class="spacer"></span>
+      ${current?.job ? '<button class="secondary small" type="button" data-qstop>Ferma la lettura</button>' : ""}
+      ${q.steps.some(s => s.state === "attesa") ? '<button class="secondary small" type="button" data-qclear>Togli quelle in coda</button>' : ""}
+      ${q.running ? "" : '<button class="secondary small" type="button" data-qclose>Chiudi</button>'}
+    </div>
+    <ol class="v-stages">${q.steps.map(s => `<li class="${STAGE_CLASS[s.state]}"
+      title="${esc(`${s.label}: ${s.state}${s.message ? ` — ${s.message}` : ""}`)}">${esc(s.label)}</li>`).join("")}</ol>
+    ${notes.length ? `<ul class="small v-queue-notes">${notes.map(s => `<li><strong>${esc(s.label)}</strong>: ${esc(s.message)}</li>`).join("")}</ul>` : ""}`;
+  $("[data-qstop]", el)?.addEventListener("click", e => busy(e.target, () => api("POST", `/api/jobs/${current.job}/cancel`)));
+  $("[data-qclear]", el)?.addEventListener("click", () => {
+    q.steps = q.steps.filter(s => s.state !== "attesa");
+    vRenderQueue(pid);
+  });
+  $("[data-qclose]", el)?.addEventListener("click", () => { q.steps = []; vRenderQueue(pid); });
 }
 
 /** Dopo una correzione: le verifiche già eseguite si rifanno (senza Gemini) e la schermata si aggiorna. */
@@ -307,7 +420,7 @@ async function vAfterChange(env, message = "") {
 function vRenderDetail(env, detail) {
   const { ctx, ui, ov, titles } = env;
   const el = $("#v-detail");
-  if (!detail) { el.innerHTML = ""; return; }
+  if (!el || !detail) return;
   const check = detail.check;
   const all = detail.items;
   const accepted = all.filter(i => i.accepted).length;
@@ -537,7 +650,7 @@ function vRenderSettings(env) {
     const input = $(`[data-vref="${CSS.escape(doc.id)}"]`, el);
     if (input.value.trim() !== (doc.reference_chosen || "")) { toast("Salva prima le impostazioni (pagine dell'elenco cambiate)."); return; }
     ui.check = "riferimento";
-    busy(b, () => vRun({ ...env, sel: [doc.id], selDocs: [doc] }, "riferimento", { reread: true }));
+    vEnqueue({ ...env, sel: [doc.id], selDocs: [doc] }, "riferimento", { reread: true });
   }));
   $$("[data-vrefedit]", el).forEach(b => b.addEventListener("click", () => busy(b, () => vEditReference(env, b.dataset.vrefedit))));
 }

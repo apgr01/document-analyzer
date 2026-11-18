@@ -97,11 +97,18 @@ function showPage(docId, page, title = "") {
 }
 
 /** Esegue un'azione disabilitando il pulsante, per evitare doppi clic. */
+/** Esegue ``action`` con il pulsante disattivato e la rotellina (classe ``is-busy``) finché lavora. */
 async function busy(button, action) {
-  if (button) button.disabled = true;
+  const mark = on => {
+    if (!button) return;
+    button.disabled = on;
+    button.classList.toggle("is-busy", on);
+    if (on) button.setAttribute("aria-busy", "true"); else button.removeAttribute("aria-busy");
+  };
+  mark(true);
   try { return await action(); }
   catch (e) { showError(e); }
-  finally { if (button) button.disabled = false; }
+  finally { mark(false); }
 }
 
 // Bozze salvate nel browser (obiettivo, correzioni): non si perdono ricaricando la pagina.

@@ -13,6 +13,15 @@ is in Italian: its labels are quoted as they appear (e.g. *Verifiche*), with a t
   collapsible section; no more "Next" buttons besides the next-step banner; a **New project**
   button on the projects page; clearer labels (library *Analisi* column, pages to index, project
   table summary, one-line descriptions in the verification table).
+- **Verifications run in a queue**: checks started while another one is running wait their turn and
+  start by themselves; a progress bar shows one stage per check, and the queue survives switching
+  tabs. Each check that has results gets an arrow and opens its findings right under its row.
+- Buttons show a spinner while their action is running.
+
+### Fixed
+- Two verifications saving at the same time (for example a check and a correction) could
+  overwrite each other's results; results and accepted findings are now saved one at a time per
+  project.
 
 ## [0.5.0] — 2026-11-16
 
