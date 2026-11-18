@@ -533,8 +533,6 @@ function renderDocs(ctx) {
               <button data-save="${esc(d.id)}" type="button">Salva</button></div>
           </div>
         </div>`).join("")}
-      <div class="row"><span class="spacer"></span>
-        <a class="linkbtn" href="#/p/${enc(pid)}/test">Avanti: ③ Prova</a></div>
     </div>`;
   bindPageClicks(box, ctx.titles);
   if ($("#lib-update")) $("#lib-update").addEventListener("click", async e => {
@@ -792,9 +790,8 @@ async function renderTest(ctx) {
           <ul>${errors.map(a => `<li>${a.page ? `p. ${a.page}` : ""}${a.row ? `, riga ${a.row}` : ""}${a.column ? `, ${esc(a.column)}` : ""}: ${esc(a.problem)}${a.value ? ` (“${esc(a.value)}”)` : ""}</li>`).join("")}</ul></details>` : ""}
       </div>`;
     }).join("")}
-    <div class="row"><span class="hint">Non ti convince? Correggi la <a href="#/p/${enc(pid)}/settings">tabella</a>, la guida
-      del catalogo nella biblioteca o le <a href="#/p/${enc(pid)}/docs">note del PDF</a>, poi rifai la prova.</span>
-      <span class="spacer"></span><a class="linkbtn" href="#/p/${enc(pid)}/index">Avanti: ④ Indicizzazione</a></div>`;
+    <p class="hint">Non ti convince? Correggi la <a href="#/p/${enc(pid)}/settings">tabella</a>, la guida del catalogo
+      nella biblioteca o le <a href="#/p/${enc(pid)}/docs">note del PDF</a>, poi rifai la prova.</p>`;
   bindPageClicks(res, ctx.titles);
 }
 
@@ -909,29 +906,28 @@ async function renderResults(ctx) {
     return;
   }
   const s = res.stats;
+  const levels = res.anomalies_by_level;
   box.innerHTML = `
     <div class="panel">
       <h3>CSV unico del progetto</h3>
-      <p><span class="badge ok">${s.righe_finali} righe</span>
+      <p><span class="badge ok">${plural(s.righe_finali, "riga", "righe")}</span>
         <span class="badge">${s.documenti_indicizzati}/${s.documenti_totali} PDF</span>
         ${s.pagine_da_elaborare ? `<span class="badge warn">${s.pagine_da_elaborare} pagine non ancora elaborate</span>` : ""}
-        ${s.errori ? `<span class="badge error">${s.errori} errori</span>` : ""}
-        ${s.avvisi ? `<span class="badge warn">${s.avvisi} avvisi</span>` : ""}</p>
+        ${res.corrections ? `<span class="badge">${plural(res.corrections, "correzione", "correzioni")} applicate</span>` : ""}</p>
       ${res.not_indexed.length ? `<div class="note warn">Non ancora indicizzati: ${res.not_indexed.map(id => esc(ctx.titles[id] || id)).join(", ")}.
         <a href="#/p/${enc(pid)}/index">Indicizzali</a>.</div>` : ""}
       ${res.stale.length ? `<div class="note warn">Regole cambiate dopo l'indicizzazione per: ${res.stale.map(id => esc(ctx.titles[id] || id)).join(", ")}.
         <a href="#/p/${enc(pid)}/index">Rifalli</a>.</div>` : ""}
-      ${res.corrections ? `<p class="hint">Con ${plural(res.corrections, "correzione", "correzioni")} del passo ⑤
-        (<a href="#/p/${enc(pid)}/verify">Verifiche</a>): sono già applicate al CSV e alla pagina di ricerca.</p>` : ""}
       <div class="row">
-        <a href="/api/projects/${enc(pid)}/download/csv"><button type="button">Scarica il CSV unico</button></a>
-        ${res.anomalies_total ? `<a href="/api/projects/${enc(pid)}/download/anomalie"><button class="secondary" type="button">Scarica le anomalie</button></a>` : ""}
-        <a href="/api/projects/${enc(pid)}/search" target="_blank" rel="noopener"><button class="secondary" type="button">Apri la pagina di ricerca</button></a>
+        <a class="linkbtn" href="/api/projects/${enc(pid)}/download/csv">Scarica il CSV unico</a>
+        <a class="linkbtn secondary" href="/api/projects/${enc(pid)}/search" target="_blank" rel="noopener">Apri la pagina di ricerca</a>
         <span class="spacer"></span>
         <button class="secondary" id="regen" type="button">Rigenera (senza Gemini)</button>
       </div>
-      <p class="hint">La pagina di ricerca è anche salvata come file autonomo in <code>data/exports/${esc(pid)}/ricerca.html</code>:
-        si apre con un doppio clic, senza bisogno del server.</p>
+      ${helpBlock("results", "Le righe si vedono e si correggono al passo ⑤ Verifiche; qui si scaricano.",
+        `<p>CSV e pagina di ricerca contengono già le correzioni del passo ⑤. La pagina di ricerca è salvata anche come
+          file autonomo in <code>data/exports/${esc(pid)}/ricerca.html</code>: si apre con un doppio clic, senza server.
+          <em>Rigenera</em> ricostruisce CSV e pagina di ricerca dai risultati salvati, senza chiamare Gemini.</p>`)}
     </div>
     <div class="panel"><h3>Per PDF</h3>
       <div class="table-wrap"><table><thead><tr><th>PDF</th><th>Righe</th><th>Errori</th><th>Avvisi</th><th></th></tr></thead><tbody>
@@ -939,16 +935,13 @@ async function renderResults(ctx) {
           <td>${d.rows}</td><td>${d.errors}</td><td>${d.warnings}</td>
           <td><a href="/api/projects/${enc(pid)}/download/documento?doc=${enc(d.id)}">CSV di questo PDF</a></td></tr>`).join("")}
       </tbody></table></div></div>
-    ${res.anomalies_total ? `<div class="panel"><h3>Da controllare</h3>
-      <p><span class="badge error">${res.anomalies_by_level.errore} errori</span>
-        <span class="badge warn">${res.anomalies_by_level.avviso} avvisi</span>
-        <span class="badge">${res.anomalies_by_level.info} note</span></p>
-      <p class="hint">Prima gli errori, poi gli avvisi, infine le note di Gemini. Clic su una riga per vedere la pagina.</p>
+    ${res.anomalies_total ? `<details class="panel"><summary><strong>Anomalie</strong>
+        <span class="small muted">${levels.errore} errori · ${levels.avviso} avvisi · ${levels.info} note di Gemini</span></summary>
+      <div class="row mt-s"><span class="hint">Prima gli errori, poi gli avvisi, infine le note. Clic su una riga per vedere la pagina.</span>
+        <span class="spacer"></span><a class="linkbtn secondary small" href="/api/projects/${enc(pid)}/download/anomalie">Scarica le anomalie</a></div>
       ${table(["file", "livello", "pagina", "riga", "colonna", "valore", "problema"],
         res.anomalies.map(a => ({ file: a.file, livello: a.level, pagina: a.page ?? "", riga: a.row ?? "", colonna: a.column ?? "", valore: a.value, problema: a.problem })),
-        { pageColumn: "pagina", fileColumn: "file", files: ctx.files })}</div>` : ""}
-    <div class="panel"><h3>Prime righe</h3>
-      ${table(res.columns, res.rows, { pageColumn: res.page_column, fileColumn: res.source_column, files: ctx.files })}</div>`;
+        { pageColumn: "pagina", fileColumn: "file", files: ctx.files })}</details>` : ""}`;
   bindPageClicks(box, ctx.titles);
   $("#regen").addEventListener("click", e => busy(e.target, async () => { await renderResults(ctx); toast("CSV e pagina di ricerca rigenerati."); }));
 }
