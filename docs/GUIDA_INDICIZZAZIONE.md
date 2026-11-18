@@ -121,10 +121,12 @@ La sezione **Biblioteca** raccoglie tutti i PDF, organizzati in **cartelle**:
    spostale; seleziona più cataloghi per spostarli, dare o togliere **tag**, eliminarli.
 3. **Cerca e filtra**: la casella di ricerca guarda nome, file, descrizione e tag; un clic su
    un tag mostra i cataloghi con quel tag da tutte le cartelle (più tag: devono averli tutti).
-   Nella colonna *Studio* vedi a che punto è ogni catalogo: dati presenti, collezioni, pagine
-   di dati, **guida**, proposta di Gemini da rivedere.
+   Nella colonna *Analisi* vedi a che punto è ogni catalogo: *analizzato* / *da analizzare*,
+   **guida**, pagine di dati, proposta di Gemini da rivedere.
 4. **Apri un catalogo** (clic sul nome). In alto: *analizzato* / *da analizzare*, *guida* /
-   *senza guida* e il pulsante **Crea progetto da questo catalogo…**. Poi:
+   *senza guida* e il pulsante **Crea progetto da questo catalogo…**. La scheda è divisa in tre
+   sezioni: **Scheda** (con i progetti che usano il catalogo), **Pagine e collezioni** e **Analisi
+   e guida**; un catalogo non ancora analizzato si apre direttamente su quest'ultima.
    - **Scheda**: titolo, cartella, tag e una descrizione libera di cosa contiene e com'è
      fatto (per le persone).
    - **Dati presenti**: l'inventario dei dati che si potrebbero estrarre dal catalogo
@@ -201,8 +203,9 @@ descrizione, o se la prova mostra che Gemini fraintende qualcosa.
 
 ## 4. Creare un progetto (dalla scheda di un catalogo)
 
-Un progetto produce **una tabella**, un CSV unico, da uno o più cataloghi. Si crea solo da
-qui: nella scheda del catalogo di partenza premi **Crea progetto da questo catalogo…**.
+Un progetto produce **una tabella**, un CSV unico, da uno o più cataloghi. Si parte sempre da
+un catalogo: **Nuovo progetto…** nella pagina dei progetti (scegli il catalogo di partenza),
+oppure **Crea progetto da questo catalogo…** nella sua scheda.
 
 **La tabella**, scritta da te:
 - **nome** del progetto e **descrizione** facoltativa (a cosa serve l'indice);
@@ -246,6 +249,9 @@ Lo stesso catalogo può avviare più progetti, per tabelle diverse (es. "una rig
 ---
 
 ## 5. Il progetto in 6 passi
+
+Le spiegazioni più lunghe di ogni schermata sono a richiesta: una riga resta sempre visibile e
+il resto si apre con il **?** accanto (l'interfaccia ricorda quali hai aperto).
 
 Aprendo un progetto ti trovi sul **prossimo passo** da fare, sempre indicato in alto; ogni
 passo ha il suo stato (*fatto*, *in corso*, *da rivedere*, *da fare*, *facoltativo*).
@@ -414,8 +420,9 @@ rifanno da sole.
 
 ### ⑥ Risultati
 
-- il **CSV unico** del progetto e un CSV per ogni PDF (*Scarica*), più le **anomalie** (prima
-  gli errori, poi gli avvisi, infine le note di Gemini; clic su una riga per vedere la pagina);
+- il **CSV unico** del progetto e un CSV per ogni PDF (*Scarica*), più le **anomalie**, in una
+  sezione che si apre (prima gli errori, poi gli avvisi, infine le note di Gemini; clic su una
+  riga per vedere la pagina). Le righe si vedono e si correggono al passo ⑤;
 - la **pagina di ricerca** (sotto);
 - *Rigenera (senza Gemini)* ricostruisce CSV e pagina di ricerca dai risultati salvati.
 

@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 Format inspired by [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The user interface
 is in Italian: its labels are quoted as they appear (e.g. *Verifiche*), with a translation.
 
+## [Unreleased]
+
+### Changed
+- **Simpler interface**: long explanations are now on demand (one visible line, the rest behind a
+  "?", remembered per screen); the catalog card is split into tabs (Card, Pages and collections,
+  Analysis and guide); the results page keeps only downloads and per-PDF CSVs, with anomalies in a
+  collapsible section; no more "Next" buttons besides the next-step banner; a **New project**
+  button on the projects page; clearer labels (library *Analisi* column, pages to index, project
+  table summary, one-line descriptions in the verification table).
+
 ## [0.5.0] — 2026-11-16
 
 ### Added

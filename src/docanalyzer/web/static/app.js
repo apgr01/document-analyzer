@@ -349,11 +349,12 @@ window.addEventListener("hashchange", route);
 async function renderHome() {
   const projects = await api("GET", "/api/projects");
   view.innerHTML = `
-    <h1>Progetti di indicizzazione</h1>
-    <p class="muted">Un progetto produce un'unica tabella (un CSV) da uno o più cataloghi della biblioteca.</p>
-    <div class="note"><strong>Per creare un progetto</strong> apri un catalogo nella <a href="#/biblioteca">biblioteca</a>
-      e usa <em>Crea progetto</em>. Prima conviene analizzarlo con Gemini: la scheda e la guida all'indicizzazione
-      rendono più precisa l'estrazione e permettono di trovare i cataloghi simili.</div>
+    <div class="row"><h1>Progetti di indicizzazione</h1><span class="spacer"></span>
+      <button id="new-project" type="button">Nuovo progetto…</button></div>
+    ${helpBlock("home", "Un progetto produce un'unica tabella (un CSV) da uno o più cataloghi della biblioteca.",
+      `<p>Si parte da un catalogo: scrivi la tabella che vuoi e, se vuoi, Gemini cerca nella biblioteca i cataloghi
+        simili. Conviene partire da un catalogo già analizzato: la scheda e la guida all'indicizzazione rendono più
+        precisa l'estrazione e permettono di trovare i cataloghi simili.</p>`)}
     <div class="panel">
       <h3>Progetti</h3>
       ${projects.length ? `<div class="table-wrap"><table>
@@ -369,6 +370,11 @@ async function renderHome() {
     </div>
     <p class="page-footer small muted"><a href="#/stile">Stile dell'interfaccia</a> · temi e componenti</p>`;
 
+  $("#new-project").addEventListener("click", e => busy(e.target, async () => {
+    const [id] = await pickCatalogs({ title: "Nuovo progetto: catalogo di partenza", ok: "Continua", multiple: false,
+      hint: "Dopo scrivi la tabella che vuoi ottenere; potrai aggiungere altri cataloghi in seguito." });
+    if (id) location.hash = `#/guidato/nuovo/${enc(id)}`;
+  }));
   $$("[data-open]").forEach(tr => tr.addEventListener("click", e => {
     if (e.target.closest("button")) return;
     location.hash = `#/p/${enc(tr.dataset.open)}`;
@@ -390,7 +396,7 @@ async function renderProject(pid, tab) {
     <p class="small"><a href="#/">&larr; Progetti</a></p>
     <h1>${esc(project.name)}</h1>
     <p class="muted small">${project.documents.length} PDF · ${project.page_count} pagine ·
-      ${project.fields.length} colonne${project.row ? ` · una riga = ${esc(project.row)}` : ""}</p>
+      ${project.fields.length} colonne${project.row ? ` · Tabella: ${esc(project.row)}` : ""}</p>
     <nav class="tabs steps-nav">${stepsNav(project, tab)}</nav>
     <div class="next-step row">${nextStep(project, tab)}</div>
     <div id="job"></div>
@@ -810,6 +816,7 @@ async function renderIndex(ctx) {
   const send = sendModePanel(ctx);
   ctx.rerender = () => renderIndex(ctx);
   const big = plan.biggest_request;
+  const anyFromTest = plan.documents.some(d => d.from_prova);
   box.innerHTML = `
     ${send.html}
     <div class="panel">
@@ -817,11 +824,13 @@ async function renderIndex(ctx) {
       ${helpBlock("index", `Gemini legge le pagine da fare: ${esc(sendModeText(ctx.project))}.`,
         `<p>Ogni pagina arriva con la tabella del progetto, la guida del catalogo e le note del PDF. Il lavoro è
           riprendibile: le pagine fatte (anche dalla prova) non si rifanno, quelle fallite si ritentano a ogni avvio.</p>`)}
-      <div class="table-wrap"><table><thead><tr><th>PDF</th><th>Pagine</th><th>Fatte</th><th>Dalla prova</th><th>Da fare</th><th>Richieste</th><th></th></tr></thead><tbody>
+      <div class="table-wrap"><table><thead><tr><th>PDF</th><th>Pagine da indicizzare</th><th>Fatte</th>
+          ${anyFromTest ? "<th>Dalla prova</th>" : ""}<th>Da fare</th><th>Richieste</th><th></th></tr></thead><tbody>
         ${plan.documents.map(d => `<tr><td><strong>${esc(d.title)}</strong>${d.has_notes ? ' <span class="badge">note</span>' : ""}
             ${d.has_guide ? "" : ' <span class="badge warn">senza guida</span>'}</td>
-          <td>${esc(d.pages_text)} (${d.pages})</td><td>${d.done}</td><td>${d.from_prova || ""}</td><td>${d.todo}</td>
-          <td>${d.requests || ""}</td>
+          <td>${d.pages} <span class="small muted">(${esc(d.pages_text)})</span></td><td>${d.done}</td>
+          ${anyFromTest ? `<td>${d.from_prova || "—"}</td>` : ""}<td>${d.todo}</td>
+          <td>${d.requests || "—"}</td>
           <td class="nowrap">${d.spec_changed ? '<span class="badge warn">regole cambiate: da rifare</span>'
             : d.failed ? `<span class="badge error" title="${esc(d.failed_reason)}">${d.failed} fallite</span>`
             : d.todo ? "" : '<span class="badge ok">completo</span>'}

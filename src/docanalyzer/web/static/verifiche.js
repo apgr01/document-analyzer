@@ -22,6 +22,15 @@ const VERIFY_HELP = {
   doppioni: "La stessa chiave su più righe, nello stesso PDF o in PDF diversi: spesso è legittimo (lo stesso motore in " +
     "due cataloghi), quindi è una segnalazione, non un errore.",
 };
+// una riga per la tabella delle verifiche (la spiegazione completa è in VERIFY_HELP, nel pannello della verifica)
+const VERIFY_SHORT = {
+  copertura: "ogni pagina inviata ha le sue righe",
+  testo: "i valori si trovano davvero sulla pagina",
+  riferimento: "confronto con l'indice del catalogo",
+  caratteri: "caratteri rotti o simboli strani",
+  vuoti: "colonne importanti vuote",
+  doppioni: "la stessa chiave su più righe",
+};
 const COVERAGE_TEXT = {
   almeno: ["Almeno una riga", "una pagina inviata senza righe è da controllare"],
   esattamente: ["Esattamente una riga", "per le tabelle con una scheda per pagina: anche più righe sono da controllare"],
@@ -211,7 +220,7 @@ async function renderVerify(ctx) {
           ${selDocs.map(d => `<th>${selDocs.length > 1 ? esc(d.title) : "Esito"}</th>`).join("")}<th></th></tr></thead><tbody>
         ${ov.checks.map(c => `<tr class="clickable ${c.id === ui.check ? "current" : ""}" data-vcheck="${c.id}">
           <td><strong>${esc(c.label)}</strong>${c.paid ? ' <span class="badge" title="Usa Gemini: una richiesta per PDF, la prima volta">✨ Gemini</span>' : ""}
-            <br><span class="small muted">${esc(VERIFY_HELP[c.id])}</span></td>
+            <br><span class="small muted" title="${esc(VERIFY_HELP[c.id])}">${esc(VERIFY_SHORT[c.id])}</span></td>
           ${selDocs.map(d => `<td>${verifyCell(d.checks[c.id])}</td>`).join("")}
           <td class="nowrap"><button type="button" class="${c.paid ? "secondary gemini" : "secondary"} small" data-vrun="${c.id}">Esegui</button></td>
         </tr>`).join("")}

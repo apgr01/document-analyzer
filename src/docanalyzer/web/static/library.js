@@ -119,8 +119,9 @@ async function renderLibrary(folder) {
 
   view.innerHTML = `
     <h1>Biblioteca</h1>
-    <p class="muted">Tutti i cataloghi, organizzati in cartelle. Apri un catalogo per analizzarlo con Gemini (scheda e
-      guida all'indicizzazione), segnare le sue pagine e <strong>creare un progetto</strong> a partire da lui.</p>
+    ${helpBlock("library", "Tutti i cataloghi, organizzati in cartelle.",
+      `<p>Apri un catalogo per analizzarlo con Gemini (scheda e guida all'indicizzazione), segnare le sue pagine e
+        <strong>creare un progetto</strong> a partire da lui.</p>`)}
     <div class="lib">
       <aside class="panel lib-tree">
         <h3>Cartelle</h3>
@@ -174,7 +175,7 @@ async function renderLibrary(folder) {
 
           ${visible.length ? `<div class="table-wrap full"><table class="lib-table">
             <thead><tr><th><input type="checkbox" id="sel-all" title="Seleziona tutti"></th><th></th><th>Catalogo</th>
-              <th>Pagine</th><th>Tag</th><th>Studio</th><th>Progetti</th>${filtering ? "<th>Cartella</th>" : ""}</tr></thead>
+              <th>Pagine</th><th>Tag</th><th>Analisi</th><th>Progetti</th>${filtering ? "<th>Cartella</th>" : ""}</tr></thead>
             <tbody>${visible.map(c => `<tr>
               <td><input type="checkbox" data-sel="${esc(c.id)}"></td>
               <td><img class="cover" loading="lazy" src="/api/documents/${enc(c.id)}/thumb/1" alt=""></td>
@@ -183,11 +184,10 @@ async function renderLibrary(folder) {
                 ${c.description ? `<br><span class="small">${esc(c.description.length > 140 ? c.description.slice(0, 140) + "…" : c.description)}</span>` : ""}</td>
               <td>${c.page_count}</td>
               <td>${tagBadges(c.tags)}</td>
-              <td class="small">${c.fields ? `${c.fields} dati<br>` : ""}${c.collections ? `${c.collections} collezioni` : ""}
-                ${c.to_index ? `<br><span class="badge ok">${c.to_index} pag. di dati</span>` : ""}
-                ${c.has_guide ? `<br><span class="badge ok">guida</span>` : ""}
-                ${c.proposals ? `<br><span class="badge warn">✨ proposta da rivedere</span>` : ""}
-                ${!c.fields && !c.collections && !c.description && !c.proposals ? `<span class="muted">da studiare</span>` : ""}</td>
+              <td class="small">${c.proposals ? '<span class="badge warn">✨ proposta da rivedere</span><br>' : ""}
+                ${c.fields || c.description ? '<span class="badge ok">analizzato</span>' : '<span class="badge">da analizzare</span>'}
+                ${c.has_guide ? '<span class="badge ok">guida</span>' : ""}
+                ${c.to_index ? `<br><span class="muted">${plural(c.to_index, "pagina", "pagine")} di dati</span>` : ""}</td>
               <td class="small">${c.projects.map(p => `<a href="#/p/${enc(p.id)}">${esc(p.name)}</a>`).join("<br>") || "—"}</td>
               ${filtering ? `<td class="small"><a href="${folderHash(c.folder)}">${esc(c.folder || "Biblioteca")}</a></td>` : ""}
             </tr>`).join("")}</tbody></table></div>`
@@ -949,21 +949,29 @@ async function renderCatalogProjects(c) {
 
 // ------------------------------------------------------------------ scelta dalla biblioteca (per i progetti)
 /** Dialogo con ricerca e caselle: restituisce gli id scelti (vuoto se annullato). */
-async function pickFromLibrary(exclude = []) {
+/** Scelta di cataloghi della biblioteca in un dialogo con ricerca: restituisce gli id scelti.
+ *  ``multiple`` false = un catalogo solo (scelta a pallino). */
+async function pickCatalogs({ title, ok, hint = "", exclude = [], multiple = true }) {
   const data = await api("GET", "/api/library/catalogs");
   const items = data.catalogs.filter(c => !exclude.includes(c.id))
     .sort((a, b) => (a.folder + "/" + a.title).localeCompare(b.folder + "/" + b.title, "it", { sensitivity: "base" }));
-  if (!items.length) { toast("Nella biblioteca non ci sono altri cataloghi."); return []; }
-  const ok = await confirmDialog({ title: "Scegli dalla biblioteca", ok: "Aggiungi al progetto", html: `
+  if (!items.length) { toast(exclude.length ? "Nella biblioteca non ci sono altri cataloghi." : "La biblioteca è vuota: carica prima dei PDF."); return []; }
+  const confirmed = await confirmDialog({ title, ok, html: `
     <input type="text" id="pick-search" placeholder="Cerca per nome, cartella o tag…">
-    <div class="pick-list">${items.map(c => `
+    <div class="pick-list">${items.map((c, i) => `
       <label class="row check" data-hay="${esc(`${c.title} ${c.folder} ${c.tags.join(" ")}`.toLowerCase())}">
-        <input type="checkbox" value="${esc(c.id)}"> <span><strong>${esc(c.title)}</strong>
-        <span class="small muted">${esc(c.folder || "Biblioteca")} · ${c.page_count} pag.</span> ${tagBadges(c.tags)}</span></label>`).join("")}
+        <input type="${multiple ? "checkbox" : "radio"}" name="pick" value="${esc(c.id)}" ${!multiple && i === 0 ? "checked" : ""}>
+        <span><strong>${esc(c.title)}</strong>
+        <span class="small muted">${esc(c.folder || "Biblioteca")} · ${c.page_count} pag.</span>
+        ${c.analyzed ? "" : '<span class="badge">da analizzare</span>'} ${tagBadges(c.tags)}</span></label>`).join("")}
     </div>
-    <p class="hint">Le pagine segnate <em>dati</em> nella biblioteca diventano le pagine del PDF nel progetto; la guida
-      all'indicizzazione viene copiata.</p>` });
-  return ok ? $$(".pick-list input:checked").map(i => i.value) : [];
+    ${hint ? `<p class="hint">${hint}</p>` : ""}` });
+  return confirmed ? $$(".pick-list input:checked").map(i => i.value) : [];
+}
+
+function pickFromLibrary(exclude = []) {
+  return pickCatalogs({ title: "Scegli dalla biblioteca", ok: "Aggiungi al progetto", exclude,
+    hint: "Le pagine segnate <em>dati</em> nella biblioteca diventano le pagine del PDF nel progetto; la guida all'indicizzazione viene copiata." });
 }
 
 // ricerca nel dialogo di scelta (il dialogo è sempre lo stesso: delega sul documento)
