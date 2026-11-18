@@ -74,6 +74,7 @@ def test_page_and_status(web):
     assert "columnsEditor" in client.get("/static/settings.js").text
     assert "renderTest" in client.get("/static/app.js").text
     assert "renderVerify" in client.get("/static/verifiche.js").text
+    assert "helpBlock" in client.get("/static/components.js").text and "/static/components.js" in client.get("/").text
     assert "/static/verifiche.js" in client.get("/").text
     # la Tabella mostra le colonne che il programma aggiunge, con gli stessi nomi del CSV
     settings_js = client.get("/static/settings.js").text

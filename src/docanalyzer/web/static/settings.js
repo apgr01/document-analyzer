@@ -132,9 +132,12 @@ async function renderSettings(ctx) {
     <div class="grid2 wide-left">
       <div class="panel">
         <h3>La tabella del progetto</h3>
-        <p class="hint">Cosa vuoi ottenere: è la stessa per tutti i PDF del progetto e, insieme alla guida di ogni
-          catalogo e alle note dei singoli PDF, forma le regole che Gemini segue pagina per pagina.
-          ${indexed ? "<strong>Cambiarla rende da rifare le pagine già indicizzate</strong> (e la prova)." : ""}</p>
+        ${helpBlock("table", "Cosa vuoi nel CSV: vale per tutti i PDF del progetto.",
+          `<p>Insieme alla guida di ogni catalogo e alle note dei singoli PDF forma le regole che Gemini segue pagina
+            per pagina. <em>Intestazione</em>: un valore scritto una volta per pagina (es. il modello nel titolo) che vale
+            per tutte le sue righe. <em>Chiave</em>: le colonne che identificano una riga, usate dalle verifiche.</p>`)}
+        ${indexed ? `<p class="note warn small">Cambiare riga, colonne o indicazioni rende da rifare le pagine già
+          indicizzate (e la prova). Nome e colonne chiave si cambiano liberamente.</p>` : ""}
         <label for="s-name">Nome del progetto</label>
         <input type="text" id="s-name">
         <label for="s-desc">Descrizione <span class="muted small">(facoltativa: a cosa serve l'indice)</span></label>
@@ -150,8 +153,9 @@ async function renderSettings(ctx) {
       </div>
       <div class="panel">
         <h3>Dati presenti nei PDF</h3>
-        <p class="hint">Dalle schede della biblioteca. Clic su un dato per aggiungerlo come colonna; il numero dice in
-          quanti PDF del progetto compare (il confronto è per nome).</p>
+        ${helpBlock("table-data", "Clic su un dato per aggiungerlo come colonna.",
+          `<p>Vengono dalle schede della biblioteca; il numero dice in quanti PDF del progetto compare il dato (il
+            confronto è per nome).</p>`)}
         ${index.size ? `<div class="chips">${[...index.values()].sort((a, b) => b.docs.size - a.docs.size || a.name.localeCompare(b.name))
           .map(x => `<button type="button" class="chip" data-addcol="${esc(x.name)}" title="${esc(docs.filter(d => x.docs.has(d.id)).map(d => d.title).join(", "))}">
             + ${esc(x.name)} <span class="small">${x.docs.size}/${docs.length}</span></button>`).join("")}</div>`

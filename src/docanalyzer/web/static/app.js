@@ -494,10 +494,10 @@ function renderDocs(ctx) {
     <div class="panel">
       <div class="row"><h3 class="m-0">PDF del progetto</h3><span class="spacer"></span>
         <button class="secondary" id="from-library" type="button">Aggiungi PDF dalla biblioteca…</button></div>
-      <p class="hint">Per ogni PDF: le <strong>pagine da indicizzare</strong> (di solito le collezioni <em>dati</em> della
-        scheda), la <strong>guida all'indicizzazione</strong> del catalogo (copiata dalla biblioteca: si cambia lì e poi
-        si aggiorna qui) e le <strong>note</strong>, istruzioni in più valide solo per quel PDF. Le colonne restano le
-        stesse per tutti.</p>
+      ${helpBlock("docs", "Per ogni PDF: pagine da indicizzare, guida e note.",
+        `<p>Le <strong>pagine da indicizzare</strong> sono di solito le collezioni <em>dati</em> della scheda. La
+          <strong>guida all'indicizzazione</strong> è copiata dalla biblioteca: si cambia lì e poi si aggiorna qui. Le
+          <strong>note</strong> sono istruzioni in più valide solo per quel PDF. Le colonne restano le stesse per tutti.</p>`)}
       ${project.documents.map(d => `
         <div class="panel list-item">
           <div class="row">
@@ -672,18 +672,17 @@ async function renderTest(ctx) {
     ${send.html}
     <div class="panel">
       <h3>Prova su poche pagine</h3>
-      <p class="hint">Prima di indicizzare tutto, Gemini estrae le righe da poche <strong>pagine da indicizzare</strong>
-        per catalogo, con esattamente le regole vere (tabella, guida, note). Così vedi subito se tabella e guida
-        funzionano; se cambi qualcosa, rifai la prova. Le pagine provate non si pagano due volte: se le regole non
-        cambiano, contano già come indicizzate.</p>
+      ${helpBlock("test", "Poche pagine per catalogo, con le regole vere: vedi subito se tabella e guida funzionano.",
+        `<p>Se cambi qualcosa, rifai la prova. Le pagine provate non si pagano due volte: se le regole non cambiano,
+          contano già come indicizzate.</p>
+        <p><em>Proponi le pagine</em> sceglie prima le pagine d'esempio della scheda che sono anche da indicizzare, poi
+          pagine distribuite nel resto; <em>Altre pagine</em> ne propone di non ancora provate. Puoi anche scriverle a mano.</p>`)}
       <div class="row">
         <label for="t-count" class="m-0">Pagine per catalogo</label>
         <input type="number" id="t-count" min="1" value="${esc(saved.count || data.default_count)}" class="input-number">
         <button class="secondary small" id="t-sample" type="button">Proponi le pagine</button>
         <button class="secondary small" id="t-more" type="button" title="Pagine non ancora provate">Altre pagine</button>
       </div>
-      <p class="hint">Proposte: prima le pagine d'esempio della scheda che sono anche da indicizzare, poi pagine distribuite
-        nel resto. Puoi scriverle a mano.</p>
       <div class="table-wrap full"><table>
         <thead><tr><th></th><th>PDF</th><th>Pagine da provare</th><th>Da indicizzare</th><th>Ultima prova</th></tr></thead>
         <tbody>${docs.map(d => `<tr>
@@ -818,8 +817,9 @@ async function renderIndex(ctx) {
     ${send.html}
     <div class="panel">
       <h3>Indicizzazione di tutti i PDF</h3>
-      <p class="hint">Gemini legge le pagine (${esc(sendModeText(ctx.project))}) con la tabella del progetto, la guida del
-        catalogo e le note del PDF.</p>
+      ${helpBlock("index", `Gemini legge le pagine da fare: ${esc(sendModeText(ctx.project))}.`,
+        `<p>Ogni pagina arriva con la tabella del progetto, la guida del catalogo e le note del PDF. Il lavoro è
+          riprendibile: le pagine fatte (anche dalla prova) non si rifanno, quelle fallite si ritentano a ogni avvio.</p>`)}
       <div class="table-wrap"><table><thead><tr><th>PDF</th><th>Pagine</th><th>Fatte</th><th>Dalla prova</th><th>Da fare</th><th>Richieste</th><th></th></tr></thead><tbody>
         ${plan.documents.map(d => `<tr><td><strong>${esc(d.title)}</strong>${d.has_notes ? ' <span class="badge">note</span>' : ""}
             ${d.has_guide ? "" : ' <span class="badge warn">senza guida</span>'}</td>

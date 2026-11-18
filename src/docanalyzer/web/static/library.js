@@ -134,8 +134,8 @@ async function renderLibrary(folder) {
           ${data.tags.length ? `<div class="chips mt-s">${data.tags.map(t =>
             `<button type="button" class="chip ${libFilters.tags.some(x => x.toLowerCase() === t.name.toLowerCase()) ? "on" : ""}"
                data-tag="${esc(t.name)}">${esc(t.name)} <span class="small">${t.count}</span></button>`).join("")}</div>
-            <p class="hint">Clic su un tag per filtrare (più tag: cataloghi che li hanno tutti). Con un filtro attivo
-              vedi i cataloghi di tutte le cartelle.</p>` : ""}
+            ${helpBlock("lib-tags", "Clic su un tag per filtrare.",
+              `<p>Con più tag vedi i cataloghi che li hanno tutti. Con un filtro attivo vedi i cataloghi di tutte le cartelle.</p>`)}` : ""}
         </div>
 
         <div class="panel">
@@ -351,9 +351,10 @@ async function renderCatalog(id) {
       </div>
       <div class="panel">
         <h3>Dati presenti</h3>
-        <p class="hint">L'inventario dei dati che si potrebbero estrarre da questo catalogo (motore, versione, codice...),
-          in qualsiasi ordine. Non decidono le colonne del CSV, che sceglierà il progetto: servono a capire il PDF e a
-          trovare i cataloghi da unire. La descrizione (unità, formato, dove si trova) è facoltativa.</p>
+        ${helpBlock("card-data", "I dati che si potrebbero estrarre da questo catalogo.",
+          `<p>Per esempio motore, versione, codice, in qualsiasi ordine. Non decidono le colonne del CSV, che sceglierà il
+            progetto: servono a capire il PDF e a trovare i cataloghi da unire. La descrizione (unità, formato, dove si
+            trova) è facoltativa.</p>`)}
         <div id="fields"></div>
         <div class="row mt-s"><button class="secondary small" id="field-add" type="button">+ Aggiungi dato</button></div>
       </div>
@@ -364,10 +365,9 @@ async function renderCatalog(id) {
 
     <div class="panel" id="guide-panel">
       <h3>Guida all'indicizzazione</h3>
-      <p class="hint">Spiega a Gemini come leggere una pagina isolata di questo catalogo (struttura, intestazioni non
-        ripetute, sigle, insidie). Accompagna ogni pagina quando un progetto indicizza il catalogo: i progetti ne usano
-        una copia, che si aggiorna con <em>Aggiorna dalla biblioteca</em>. La scrive Gemini con l'analisi qui sotto;
-        puoi correggerla a mano.</p>
+      ${helpBlock("card-guide", "Come leggere una pagina isolata di questo catalogo: accompagna ogni pagina inviata a Gemini.",
+        `<p>Struttura, intestazioni non ripetute, sigle, insidie. La scrive Gemini con l'analisi; puoi correggerla a mano.
+          I progetti ne usano una copia, che si aggiorna con <em>Aggiorna dalla biblioteca</em>.</p>`)}
       <textarea id="guide-text" rows="12" class="mono" placeholder="Nessuna guida: analizza il catalogo con Gemini, oppure scrivila tu."></textarea>
       <div class="row mt-s">
         <button class="secondary" id="guide-regen" type="button">✨ Rigenera la guida dalla scheda attuale…</button>
@@ -385,13 +385,14 @@ async function renderCatalog(id) {
 
     <div class="panel" id="analysis">
       <h3>✨ Analisi con Gemini</h3>
-      <p class="hint">Due richieste in fila: prima Gemini guarda le pagine che scegli e propone descrizione, tag, dati
-        presenti e collezioni di pagine; subito dopo, con quella scheda, le stesse pagine e le <em>pagine chiave</em>
-        (indice, legenda, esempi, prima pagina di ogni sezione di dati) scrive la guida all'indicizzazione. Niente viene
-        salvato finché non applichi la proposta; ogni analisi resta archiviata.</p>
+      ${helpBlock("card-analysis", "Gemini propone la scheda e scrive la guida: niente cambia finché non applichi la proposta.",
+        `<p>Due richieste in fila: prima Gemini guarda le pagine che scegli e propone descrizione, tag, dati presenti e
+          collezioni di pagine; poi, con quella scheda, le stesse pagine e le <em>pagine chiave</em> (indice, legenda,
+          esempi, prima pagina di ogni sezione di dati) scrive la guida. Ogni analisi resta archiviata.</p>`)}
       <h4 class="subhead">Pagine da inviare</h4>
-      <p class="hint">Clic per selezionare, <kbd>Maiusc</kbd>+clic per un intervallo, doppio clic per ingrandire.
-        Di solito bastano copertina, indice, legenda e qualche pagina tipo: le parti che non vede Gemini le deduce dall'indice.</p>
+      ${helpBlock("card-pages", "Di solito bastano copertina, indice, legenda e qualche pagina tipo.",
+        `<p>Clic per selezionare, <kbd>Maiusc</kbd>+clic per un intervallo, doppio clic per ingrandire. Le parti che Gemini
+          non vede le deduce dall'indice.</p>`)}
       <div class="row">
         <input type="text" id="a-pages" placeholder="oppure scrivile, es. 1-6, 20, 45-46" class="grow">
         <button class="secondary small" id="a-quick" type="button">Selezione rapida (prime 6 + 8)</button>
@@ -404,17 +405,17 @@ async function renderCatalog(id) {
       <div class="thumbs" id="a-thumbs">${Array.from({ length: total }, (_, i) => i + 1).map(p => `
         <div class="thumb" data-p="${p}"><img loading="lazy" src="/api/documents/${enc(c.id)}/thumb/${p}" alt="pagina ${p}">${p}</div>`).join("")}</div>
 
-      <h4 class="subhead">Indicazioni per Gemini</h4>
-      <p class="hint">Qui decidi <strong>cosa</strong> Gemini deve cercare e come descriverlo. Il <strong>formato</strong> della
-        risposta invece è fisso: lo aggiunge il programma dopo le tue indicazioni, con la regola che prevale su qualsiasi
-        richiesta diversa, e ogni risposta viene controllata. Se non rispetta il formato viene scartata e segnata
-        <em>non valida</em>, senza toccare la scheda. <em>Vedi il prompt</em> mostra il testo completo.</p>
-      <textarea id="a-instr" rows="10"></textarea>
-      <div class="row">
-        <button class="secondary small" id="a-save-default" type="button">Salva come mio predefinito</button>
-        <button class="secondary small" id="a-reset" type="button">Ripristina quello di fabbrica</button>
-        <span class="hint" id="a-prompt-state"></span>
-      </div>
+      <details class="mt-m"><summary class="small">Indicazioni per Gemini sull'analisi</summary>
+        ${helpBlock("card-instr", "Cosa Gemini deve cercare e come descriverlo.",
+          `<p>Il <strong>formato</strong> della risposta invece è fisso: lo aggiunge il programma dopo le tue indicazioni e
+            prevale su qualsiasi richiesta diversa. Ogni risposta viene controllata: se non rispetta il formato viene
+            scartata e segnata <em>non valida</em>, senza toccare la scheda. <em>Vedi il prompt</em> mostra il testo completo.</p>`)}
+        <textarea id="a-instr" rows="10"></textarea>
+        <div class="row">
+          <button class="secondary small" id="a-save-default" type="button">Salva come mio predefinito</button>
+          <button class="secondary small" id="a-reset" type="button">Ripristina quello di fabbrica</button>
+          <span class="hint" id="a-prompt-state"></span>
+        </div></details>
       <label class="row fw-normal"><input type="checkbox" id="a-card" checked> Tieni conto della
         scheda attuale (Gemini la completa e la corregge invece di ripartire da zero)</label>
       <div class="row"><div id="a-history" class="spacer"></div>
@@ -424,8 +425,9 @@ async function renderCatalog(id) {
 
     <div class="panel">
       <h3>Pagine e collezioni</h3>
-      <p class="hint">Clic su una miniatura per vederla in grande, <strong>Maiusc+clic</strong> per selezionare un
-        intervallo; poi scegli il tag e aggiungi la collezione. Una pagina può stare in più collezioni.</p>
+      ${helpBlock("card-collections", "Seleziona le pagine, scegli il tag e aggiungi la collezione.",
+        `<p>Clic su una miniatura per vederla in grande, <strong>Maiusc+clic</strong> per selezionare un intervallo. Una
+          pagina può stare in più collezioni.</p>`)}
       <div class="viewer">
         <div class="thumbs viewer-thumbs" id="v-thumbs">${Array.from({ length: total }, (_, i) => i + 1).map(p => `
           <div class="thumb" data-p="${p}"><img loading="lazy" src="/api/documents/${enc(c.id)}/thumb/${p}" alt="">

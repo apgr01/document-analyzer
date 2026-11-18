@@ -196,16 +196,17 @@ async function renderVerify(ctx) {
         <a class="small" href="/api/projects/${enc(pid)}/download/csv">Scarica il CSV (con le correzioni)</a>
         <button id="v-run-all" type="button" title="Copertura, contenuto sulla pagina, caratteri, vuoti, doppioni e il confronto con gli elenchi di riferimento già letti: subito, senza chiamare Gemini">
           Esegui le verifiche senza Gemini</button></div>
-      <p class="hint">Controlli sui risultati dell'indicizzazione: non cambiano nulla da soli. Le correzioni (sostituzioni, celle
-        modificate, righe eliminate) si applicano al CSV ogni volta che si genera, senza toccare ciò che ha letto Gemini, e
-        si possono togliere.${ov.corrections ? ` <strong>${plural(ov.corrections, "correzione", "correzioni")}</strong> in uso.` : ""}</p>
+      ${helpBlock("verify", `Controlli sui risultati: da soli non cambiano nulla.${ov.corrections
+          ? ` <strong>${plural(ov.corrections, "correzione", "correzioni")}</strong> in uso.` : ""}`,
+        `<p>Le correzioni (sostituzioni, celle modificate, righe eliminate) si applicano al CSV ogni volta che si genera,
+          senza toccare ciò che ha letto Gemini, e si possono togliere.</p>
+        <p>Clic su un PDF per lavorare solo su quello; Ctrl (⌘ sul Mac) + clic per sceglierne più d'uno. Verifiche, righe e
+          azioni valgono per i PDF scelti. Clic su una verifica per vederne le segnalazioni.</p>`)}
       <div class="chips v-docs">
         <button type="button" class="chip ${ui.docs ? "" : "on"}" data-vdocs="all">Tutti i PDF <span class="small">${indexed.length}</span></button>
         ${ov.documents.map(d => `<button type="button" class="chip ${ui.docs && ui.docs.includes(d.id) ? "on" : ""}" data-vdoc="${esc(d.id)}"
           ${d.indexed ? "" : 'disabled title="Non ancora indicizzato"'}>${esc(d.title)}</button>`).join("")}
       </div>
-      ${ov.documents.length > 1 ? `<p class="hint">Clic su un PDF per lavorare solo su quello; Ctrl (⌘ sul Mac) + clic per
-        sceglierne più d'uno. Verifiche, righe e azioni valgono per i PDF scelti.</p>` : ""}
       <div class="table-wrap v-matrix"><table><thead><tr><th>Verifica</th>
           ${selDocs.map(d => `<th>${selDocs.length > 1 ? esc(d.title) : "Esito"}</th>`).join("")}<th></th></tr></thead><tbody>
         ${ov.checks.map(c => `<tr class="clickable ${c.id === ui.check ? "current" : ""}" data-vcheck="${c.id}">
@@ -325,8 +326,7 @@ function vRenderDetail(env, detail) {
         <span class="small muted">${column ? `in ${esc(column)}` : "in tutte le colonne"}, ${oneDoc ? "in questo PDF" : "in tutti i PDF"}</span>
       </div>`;
     }).join("")}</div>
-    <p class="hint">Oppure correggi i valori uno per uno qui sotto. Per sostituire un testo più lungo di un carattere usa
-      <em>Sostituisci tutte</em> nelle correzioni, in fondo.</p>`;
+    <p class="hint">Oppure correggi i valori uno per uno qui sotto.</p>`;
   }
 
   el.innerHTML = `<div class="panel">
@@ -494,8 +494,9 @@ function vRenderSettings(env) {
         <label>Colonne da cercare nel testo della pagina</label>
         <div class="chips v-cols">${ov.columns.map(c => `<label class="chip"><input type="checkbox" data-vcol="${esc(c)}"
           ${checkCols.has(c) ? "checked" : ""}> ${esc(c)}</label>`).join("")}</div>
-        <p class="hint">Nessuna scelta = le colonne chiave. Conviene scegliere colonne con valori stampati così come sono (codici,
-          modelli, misure), non testi riassunti o tradotti da Gemini.</p>
+        ${helpBlock("verify-cols", "Nessuna scelta = le colonne chiave.",
+          `<p>Conviene scegliere colonne con valori stampati così come sono (codici, modelli, misure), non testi riassunti
+            o tradotti da Gemini.</p>`)}
       </div>
     </div>
     <label>Elenco di riferimento: le pagine di ogni PDF che elencano tutte le voci (indice, sommario, listino…)</label>
@@ -508,8 +509,9 @@ function vRenderSettings(env) {
         <td class="nowrap">${d.reference ? `<button class="secondary small" data-vrefedit="${esc(d.id)}" type="button">Vedi e correggi</button>` : ""}
           <button class="secondary small gemini" data-vreread="${esc(d.id)}" type="button">${d.reference ? "Rileggi" : "Leggi"} con Gemini</button></td></tr>`).join("")}
     </tbody></table></div>
-    <p class="hint">Vuoto = le pagine segnate come <em>Indice</em> nella scheda del catalogo. Con più colonne chiave, una voce
-      dell'elenco corrisponde a una riga quando coincidono tutte.</p>
+    ${helpBlock("verify-ref", "Vuoto = le pagine segnate come <em>Indice</em> nella scheda del catalogo.",
+      `<p>Si confrontano le colonne chiave che l'elenco riporta: un indice dei motori si confronta sul motore anche se la
+        chiave della riga è motore + codice.</p>`)}
     <div class="row mt-s"><span class="spacer"></span><button id="v-save-settings" type="button">Salva le impostazioni</button></div>`;
   el.addEventListener("toggle", () => { ui.settingsOpen = el.open; });
   $("#v-save-settings", el).addEventListener("click", e => busy(e.target, async () => {
@@ -573,8 +575,7 @@ async function vLoadRows(env) {
   const hadFocus = document.activeElement && document.activeElement.id;
   el.innerHTML = `
     <div class="row"><h3 class="m-0">Righe del CSV</h3><span class="small muted">come finiranno nel CSV, con le correzioni</span></div>
-    <p class="hint">Clic su una cella per correggerla (Invio salva, Esc annulla); le celle corrette sono evidenziate. Clic sul numero
-      di pagina per vederla.</p>
+    <p class="hint">Clic su una cella per correggerla: Invio salva, Esc annulla.</p>
     <div class="row v-rows-bar">
       <input type="text" id="v-q" placeholder="Cerca nelle righe…" value="${esc(f.q)}" class="input-wide">
       <input type="number" id="v-pg" placeholder="pagina" min="1" value="${esc(f.page)}">
@@ -656,7 +657,8 @@ function vRenderCorrections(env, corr) {
         ${ov.documents.map(d => `<option value="${esc(d.id)}" ${ui.docs && ui.docs.length === 1 && ui.docs[0] === d.id ? "selected" : ""}>in ${esc(d.title)}</option>`).join("")}</select>` : ""}
       <button id="c-add" type="button">Sostituisci tutte</button>
     </div>
-    <p class="hint">Distingue maiuscole e minuscole. Vale anche per le pagine indicizzate dopo; non tocca le celle corrette a mano.</p>
+    ${helpBlock("verify-rule", "Distingue maiuscole e minuscole.",
+      `<p>È una regola: vale anche per le pagine indicizzate dopo e non tocca le celle corrette a mano.</p>`)}
     ${corr.rules.length ? `<div class="table-wrap"><table><thead><tr><th>Trova</th><th>Sostituisci con</th><th>Colonna</th>${multi ? "<th>PDF</th>" : ""}<th>Celle cambiate</th><th></th></tr></thead><tbody>
       ${corr.rules.map(x => `<tr><td>${code(x.find)}</td><td>${code(x.replace)}</td><td>${esc(x.column || "tutte")}</td>
         ${multi ? `<td>${esc(x.doc_title || "tutti")}</td>` : ""}<td>${x.changed}</td>

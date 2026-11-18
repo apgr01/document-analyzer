@@ -31,10 +31,11 @@ async function renderGuidedPanel(c) {
   box.innerHTML = `
     <div class="row"><h3 class="m-0">Crea progetto</h3><span class="spacer"></span>
       <a class="linkbtn" href="#/guidato/nuovo/${enc(c.id)}">Crea progetto da questo catalogo…</a></div>
-    <p class="hint">Scrivi la tabella che vuoi ottenere (cosa rappresenta una riga e le colonne); poi, se vuoi, Gemini
-      cerca tra i cataloghi analizzati della biblioteca quelli che possono produrre righe della stessa tabella.
-      ${c.analyzed ? "" : " <strong>Questo catalogo non è ancora analizzato</strong>: una descrizione, i dati presenti e la guida aiutano molto."}
-      ${c.guide ? "" : " <strong>Non ha ancora una guida all'indicizzazione</strong>: senza, Gemini legge ogni pagina senza sapere com'è fatto il catalogo."}</p>
+    ${helpBlock("card-project", "Scrivi la tabella che vuoi ottenere; Gemini può cercare i cataloghi simili.",
+      `<p>Cosa rappresenta una riga e le colonne; poi, se vuoi, Gemini cerca tra i cataloghi analizzati della biblioteca
+        quelli che possono produrre righe della stessa tabella.</p>`)}
+    ${c.analyzed && c.guide ? "" : `<p class="note warn small">${c.analyzed ? "" : "Questo catalogo non è ancora analizzato. "}${c.guide
+      ? "" : "Senza guida all'indicizzazione Gemini legge ogni pagina senza sapere com'è fatto il catalogo."}</p>`}
     ${runs.length ? `<details><summary class="small">Ricerche precedenti (${runs.length})</summary><ul class="small">
       ${runs.map(r => `<li><a href="#/guidato/${enc(r.id)}">${esc(guidedDate(r.created_at))}${r.name ? ` · ${esc(r.name)}` : ""}</a> ·
         ${r.status === "valida" ? `${r.candidates} candidat${r.candidates === 1 ? "o" : "i"}` : `<span class="badge error">non valida</span>`}
@@ -78,10 +79,11 @@ async function renderGuidedNew(docId) {
     </div>
     <div class="panel">
       <h3>Cataloghi simili</h3>
-      <p class="hint">Gemini riceve la tabella, la scheda di <strong>${esc(c.title)}</strong> e quelle di
-        <strong>${analyzed} catalog${analyzed === 1 ? "o analizzato" : "hi analizzati"}</strong> della biblioteca
-        (descrizione, dati presenti, collezioni: solo testo, niente PDF) e dice quali possono produrre righe della stessa
-        tabella e con quali pagine.${notAnalyzed ? ` ${notAnalyzed} catalog${notAnalyzed === 1 ? "o non analizzato è escluso" : "hi non analizzati sono esclusi"}.` : ""}</p>
+      ${helpBlock("new-similar", `Gemini confronta la tabella con <strong>${analyzed} catalog${analyzed === 1
+          ? "o analizzato" : "hi analizzati"}</strong> e dice quali possono produrre le stesse righe.`,
+        `<p>Riceve la tabella, la scheda di <strong>${esc(c.title)}</strong> e quelle degli altri cataloghi analizzati
+          (descrizione, dati presenti, collezioni: solo testo, niente PDF) e indica anche con quali pagine.${notAnalyzed
+          ? ` ${notAnalyzed} catalog${notAnalyzed === 1 ? "o non analizzato è escluso" : "hi non analizzati sono esclusi"}.` : ""}</p>`)}
       <details><summary class="small">Indicazioni per Gemini (come valutare i cataloghi)</summary>
         <p class="hint">Il formato della risposta è fisso: lo aggiunge il programma dopo le tue indicazioni e prevale su
           qualsiasi richiesta diversa; se la risposta non lo rispetta è scartata come <em>non valida</em>.</p>
@@ -214,8 +216,8 @@ async function renderGuidedReport(runId) {
     ${r.notes ? `<div class="panel proposal"><h4 class="mt-0">Osservazioni di Gemini</h4><blockquote>${esc(r.notes)}</blockquote></div>` : ""}
     <div class="panel">
       <h3>La tabella</h3>
-      <p class="hint">Quella che hai scritto (si modifica nel progetto, al passo ①). Accanto a ogni colonna: in quanti PDF
-        scelti si ricava, secondo Gemini.</p>
+      ${helpBlock("report-table", "Quella che hai scritto: si modifica nel progetto, al passo ①.",
+        `<p>Accanto a ogni colonna: in quanti PDF scelti si ricava, secondo Gemini.</p>`)}
       <label for="r-name">Nome del progetto</label><input type="text" id="r-name">
       ${req.description ? `<p class="small"><strong>Descrizione:</strong> ${esc(req.description)}</p>` : ""}
       <p class="small"><strong>Ogni riga rappresenta:</strong> ${esc(req.row)}</p>
@@ -232,8 +234,8 @@ async function renderGuidedReport(runId) {
     </div>
     <div class="panel">
       <h3>Cataloghi candidati (${r.candidates.length})</h3>
-      ${r.candidates.length ? `<p class="hint">Spunta i cataloghi da mettere nel progetto (i <em>compatibili</em> sono già
-        spuntati) e, per ciascuno, le sezioni da indicizzare.</p>` + r.candidates.map(x => {
+      ${r.candidates.length ? `<p class="hint">Spunta i cataloghi da mettere nel progetto e le loro sezioni da indicizzare
+        (i <em>compatibili</em> sono già spuntati).</p>` + r.candidates.map(x => {
         const k = cat(x.document);
         return `<div class="panel cand list-item">
           <label class="row m-0">

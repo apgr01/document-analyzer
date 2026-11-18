@@ -119,6 +119,21 @@ label.chip { display: inline-flex; gap: .3rem; align-items: center; font-weight:
         text-align: center; color: var(--color-text-muted); cursor: pointer; }
 .drop.over { border-color: var(--color-accent); background: var(--color-accent-soft); }
 
+/* ===================================================================== aiuto a richiesta */
+/* helpBlock() in components.js: una riga visibile, il resto si apre con il "?" */
+details.help { margin: var(--space-2xs) 0 var(--space-s); font-size: var(--text-sm); color: var(--color-text-muted); }
+details.help > summary { list-style: none; cursor: pointer; color: var(--color-text-muted); }
+details.help > summary::-webkit-details-marker { display: none; }
+details.help > summary::after { content: "?"; display: inline-flex; align-items: center; justify-content: center;
+        width: 1.1rem; height: 1.1rem; margin-left: var(--space-xs); border-radius: var(--radius-pill);
+        border: var(--border-width) solid var(--color-border); color: var(--color-accent); font-size: var(--text-xs);
+        font-weight: var(--weight-strong); vertical-align: text-bottom; }
+details.help[open] > summary::after { content: "\2715"; }
+details.help .help-body { margin-top: var(--space-xs); padding: var(--space-s) var(--space-m); background: var(--color-bg);
+        border-left: 3px solid var(--color-accent-soft); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+details.help .help-body > :first-child { margin-top: 0; }
+details.help .help-body > :last-child { margin-bottom: 0; }
+
 /* ===================================================================== avvisi e badge */
 .note { padding: .6rem .8rem; border-radius: var(--radius-md); margin: var(--space-s) 0; background: var(--color-accent-soft); }
 .note.warn { background: var(--color-warning-soft); }
